@@ -269,6 +269,7 @@ body::before{content:'';position:fixed;inset:0;background:rgba(5,15,5,0.78);z-in
       <div class="admin-row">
         <input class="admin-input" id="ah-odds" placeholder="Odds e.g. 5-1">
         <input class="admin-input" id="ah-color" placeholder="Silks color">
+        <input class="admin-input" id="ah-last" placeholder="Last race result">
         <button class="btn btn-gold btn-sm" onclick="addHorse()">Add</button>
       </div>
     </div>
@@ -496,9 +497,11 @@ function renderHorses(){
     return '<div class="horse-card '+(selectedHorses.includes(h.num)?'selected':'')+'" onclick="toggleHorse('+h.num+')">'+
       '<div class="horse-row"><span class="horse-num">'+h.num+'</span>'+
       '<div class="horse-info"><div class="horse-name">'+h.name+'</div>'+
-      '<div class="horse-jockey">'+(h.jockey?'Jockey: '+h.jockey:'')+'</div></div>'+
+      '<div class="horse-jockey">'+(h.jockey?'🏇 '+h.jockey:'')+(h.trainer?' · '+h.trainer:'')+'</div>'+
+      (h.lastRace?'<div style="font-size:0.7rem;color:#7a9a7a;margin-top:2px">'+h.lastRace+'</div>':'')+
+      '</div>'+
       '<div style="text-align:right"><div class="horse-odds">'+h.odds+'</div>'+
-      (h.color?'<div style="font-size:0.7rem;color:var(--muted)">'+h.color+'</div>':'')+
+      (h.color?'<div style="font-size:0.65rem;color:var(--muted);margin-top:2px">'+h.color+'</div>':'')+
       '</div></div></div>';
   }).join('');
 }
@@ -633,14 +636,15 @@ function addHorse(){
   var jockey=document.getElementById('ah-jockey').value.trim();
   var odds=document.getElementById('ah-odds').value.trim();
   var color=document.getElementById('ah-color').value.trim();
+  var lastRace=document.getElementById('ah-last').value.trim();
   if(!num||!name){showToast('Horse number and name required');return;}
   if(horses.find(function(h){return h.num===num;})){showToast('Horse #'+num+' already exists');return;}
-  horses.push({num:num,name:name,jockey:jockey,odds:odds||'5-1',color:color});
+  horses.push({num:num,name:name,jockey:jockey,odds:odds||'5-1',color:color,lastRace:lastRace});
   horses.sort(function(a,b){return a.num-b.num;});
   save();renderAdminHorses();renderHorses();
   document.getElementById('ah-num').value='';document.getElementById('ah-name').value='';
   document.getElementById('ah-jockey').value='';document.getElementById('ah-odds').value='';
-  document.getElementById('ah-color').value='';
+  document.getElementById('ah-color').value='';document.getElementById('ah-last').value='';
   showToast(name+' added!');
 }
 
@@ -658,7 +662,9 @@ function renderAdminHorses(){
     return '<div class="card2" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px">'+
       '<div><span style="font-family:Oswald,sans-serif;color:var(--gold);margin-right:8px">#'+h.num+'</span>'+
       '<span style="font-family:\'Playfair Display\',serif">'+h.name+'</span>'+
-      '<div style="font-size:0.75rem;color:var(--muted)">'+(h.jockey?h.jockey+' · ':'')+h.odds+'</div></div>'+
+      '<div style="font-size:0.75rem;color:var(--muted)">'+(h.jockey?'🏇 '+h.jockey+' · ':'')+h.odds+(h.trainer?' · '+h.trainer:'')+'</div>'+
+      (h.lastRace?'<div style="font-size:0.7rem;color:#7a9a7a">'+h.lastRace+'</div>':'')+
+      '</div>'+
       '<button class="btn-danger" onclick="removeHorse('+h.num+')">✕</button></div>';
   }).join('');
 }
@@ -721,7 +727,34 @@ function showToast(msg){
   setTimeout(function(){t.classList.remove('show');},2800);
 }
 
+var DEFAULT_HORSES=[
+  {num:1,name:'Renegade',jockey:'I. Ortiz Jr.',trainer:'T. Pletcher',odds:'4-1',sire:'Into Mischief',color:'Blue & Gold',lastRace:'Won Arkansas Derby G1'},
+  {num:2,name:'Commandment',jockey:'F. Prat',trainer:'B. Cox',odds:'7-1',sire:'Into Mischief',color:'Red & White',lastRace:'Won Florida Derby G1'},
+  {num:3,name:'Further Ado',jockey:'I. Ortiz Jr.',trainer:'B. Cox',odds:'8-1',sire:'Gun Runner',color:'Green & Gold',lastRace:'Won Blue Grass G1 by 11L'},
+  {num:4,name:'The Puma',jockey:'J. Castellano',trainer:'G. Delgado',odds:'12-1',sire:'Essential Quality',color:'Purple & Silver',lastRace:'2nd Florida Derby G1'},
+  {num:5,name:'So Happy',jockey:'M. Smith',trainer:'M. Glatt',odds:'15-1',sire:'Runhappy',color:'Yellow & Black',lastRace:'Won Santa Anita Derby G1'},
+  {num:6,name:'Silent Tactic',jockey:'C. Torres',trainer:'M. Casse',odds:'18-1',sire:'Tacitus',color:'Navy & Orange',lastRace:'2nd Arkansas Derby G1'},
+  {num:7,name:'Paladin',jockey:'T. Gaffalione',trainer:'C. Brown',odds:'20-1',sire:'Gun Runner',color:'Maroon & White',lastRace:'Won Risen Star G2'},
+  {num:8,name:'Chief Wallabee',jockey:'J. Alvarado',trainer:'W. Mott',odds:'13-1',sire:'Constitution',color:'Teal & Gold',lastRace:'3rd Florida Derby G1'},
+  {num:9,name:'Nearly',jockey:'J. Velazquez',trainer:'T. Pletcher',odds:'20-1',sire:'Not This Time',color:'Pink & White',lastRace:'4th Florida Derby G1'},
+  {num:10,name:'Potente',jockey:'J. Hernandez',trainer:'B. Baffert',odds:'25-1',sire:'Into Mischief',color:'White & Blue',lastRace:'2nd Santa Anita Derby G1'},
+  {num:11,name:'Class President',jockey:'J. Velazquez',trainer:'T. Pletcher',odds:'30-1',sire:'Uncle Mo',color:'Crimson & Gold',lastRace:'Won Rebel Stakes G2'},
+  {num:12,name:'Pavlovian',jockey:'E. Maldonado',trainer:'D. O\'Neill',odds:'30-1',sire:'Pavel',color:'Green & White',lastRace:'2nd Louisiana Derby G2'},
+  {num:13,name:'Intrepido',jockey:'H. Berrios',trainer:'J. Mullins',odds:'40-1',sire:'Maximus Mischief',color:'Orange & Black',lastRace:'4th Santa Anita Derby G1'},
+  {num:14,name:'Fulleffort',jockey:'I. Ortiz Jr.',trainer:'B. Cox',odds:'23-1',sire:'Liam\'s Map',color:'Gold & Brown',lastRace:'Won Jeff Ruby Steaks G3'},
+  {num:15,name:'Emerging Market',jockey:'F. Prat',trainer:'C. Brown',odds:'15-1',sire:'Candy Ride',color:'Silver & Blue',lastRace:'Won Louisiana Derby G2'},
+  {num:16,name:'Golden Tempo',jockey:'J. Ortiz',trainer:'C. DeVaux',odds:'30-1',sire:'Curlin',color:'Gold & Black',lastRace:'3rd Louisiana Derby G2'},
+  {num:17,name:'Robusta',jockey:'E. Jaramillo',trainer:'D. O\'Neill',odds:'50-1',sire:'Accelerate',color:'Brown & Tan',lastRace:'7th Santa Anita Derby G1'},
+  {num:18,name:'Chip Honcho',jockey:'L. Saez',trainer:'S. Asmussen',odds:'40-1',sire:'Connect',color:'Red & Grey',lastRace:'5th Louisiana Derby G2'},
+  {num:19,name:'Litmus Test',jockey:'F. Arrieta',trainer:'B. Baffert',odds:'35-1',sire:'Nyquist',color:'White & Red',lastRace:'7th Arkansas Derby G1'},
+  {num:20,name:'Brant',jockey:'F. Geroux',trainer:'B. Baffert',odds:'50-1',sire:'Gun Runner',color:'Blue & White',lastRace:'5th San Felipe G2'},
+];
+
 load();
+if(!horses.length){
+  horses=DEFAULT_HORSES;
+  save();
+}
 drawWheel(0);
 </script>
 </body>
