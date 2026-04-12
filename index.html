@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>The Chairman's Casino – Kentucky Derby 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Crimson+Pro:wght@400;600&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#C9A84C;--gold-light:#F0D080;--gold-dark:#8B6914;
+  --green:#1a4a1a;--green-mid:#2d6e2d;--green-light:#3d8b3d;
+  --cream:#FDF6E3;--cream-dark:#F5E9C8;--brown:#3D1F00;--red:#8B1A1A;
+  --bg:#1a1c1e;--card:#22262a;--card2:#2a2f34;
+  --border:rgba(201,168,76,0.35);--text:#FDF6E3;--muted:#B8A878;
+}
+body{font-family:'Crimson Pro',Georgia,serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;background-image:url('derby-bg.jpg');background-size:cover;background-position:center 40%;background-attachment:fixed}
+body::before{content:'';position:fixed;inset:0;background:rgba(5,15,5,0.78);z-index:0;pointer-events:none}
+#loginScreen,#appScreen{position:relative;z-index:1}
+
+.header{background:linear-gradient(180deg,rgba(15,17,19,0.97) 0%,rgba(34,38,42,0.95) 100%);border-bottom:2px solid var(--gold);padding:10px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;backdrop-filter:blur(6px)}
+.logo-img{width:52px;height:52px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;flex-shrink:0;background:#1a3a1a}
+.header-text{flex:1}
+.header-title{font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:900;color:var(--gold-light);letter-spacing:1px;line-height:1.1}
+.header-sub{font-family:'Oswald',sans-serif;font-size:0.68rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.balance-chip{background:#2a2f34;border:1px solid var(--gold);border-radius:20px;padding:6px 14px;text-align:center;flex-shrink:0}
+.balance-label{font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.balance-amt{font-family:'Oswald',sans-serif;font-size:1.1rem;color:var(--gold-light);font-weight:700}
+
+.nav{display:flex;background:rgba(20,23,26,0.92);border-bottom:1px solid var(--border);backdrop-filter:blur(6px)}
+.nav-btn{flex:1;padding:10px 4px;font-family:'Oswald',sans-serif;font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s}
+.nav-btn.active{color:var(--gold-light);border-bottom-color:var(--gold)}
+
+.page{display:none;padding:16px;max-width:480px;margin:0 auto}
+.page.active{display:block}
+
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:transparent;width:100%}
+.login-logo{width:90px;height:90px;border-radius:12px;border:3px solid var(--gold);object-fit:cover;background:#1a3a1a;flex-shrink:0}
+.login-title{font-family:'Playfair Display',serif;font-size:2rem;color:var(--gold-light);text-align:center;margin-bottom:4px}
+.login-sub{font-family:'Oswald',sans-serif;font-size:0.75rem;letter-spacing:3px;color:var(--muted);text-align:center;margin-bottom:32px;text-transform:uppercase}
+.form-group{width:100%;margin-bottom:14px}
+.form-group label{font-family:'Oswald',sans-serif;font-size:0.7rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:6px}
+.form-group input{width:100%;background:#22262a;border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--cream);font-family:'Crimson Pro',serif;font-size:1rem;outline:none;transition:border 0.2s}
+.form-group input:focus{border-color:var(--gold)}
+.btn{font-family:'Oswald',sans-serif;letter-spacing:2px;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;transition:all 0.2s;font-weight:600}
+.btn-gold{background:linear-gradient(135deg,var(--gold-dark),var(--gold),var(--gold-dark));color:var(--brown);padding:13px 28px;font-size:0.85rem;width:100%}
+.btn-gold:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.btn-gold:active{transform:scale(0.98)}
+.btn-sm{padding:8px 16px;font-size:0.7rem}
+.btn-outline{background:transparent;border:1px solid var(--gold);color:var(--gold-light);padding:10px 20px;font-size:0.75rem;border-radius:8px;cursor:pointer;font-family:'Oswald',sans-serif;letter-spacing:2px;text-transform:uppercase;transition:all 0.2s}
+.btn-outline:hover{background:rgba(201,168,76,0.1)}
+.btn-danger{background:#5c1010;border:1px solid #8B1A1A;color:#ff9999;padding:8px 16px;font-size:0.7rem;border-radius:8px;cursor:pointer;font-family:'Oswald',sans-serif;letter-spacing:1px;transition:all 0.2s}
+
+.section-title{font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--gold-light);margin-bottom:4px}
+.section-sub{font-size:0.8rem;color:var(--muted);margin-bottom:16px;font-family:'Oswald',sans-serif;letter-spacing:1px;text-transform:uppercase}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+
+.card{background:rgba(34,38,42,0.88);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;backdrop-filter:blur(4px)}
+.card2{background:rgba(42,47,52,0.88);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;backdrop-filter:blur(4px)}
+
+.horse-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.2s}
+.horse-card:hover{border-color:var(--gold);background:var(--card2)}
+.horse-card.selected{border-color:var(--gold);background:rgba(201,168,76,0.1);box-shadow:0 0 0 2px var(--gold-dark)}
+.horse-num{display:inline-block;width:32px;height:32px;border-radius:50%;background:#2a2f34;border:2px solid var(--gold);text-align:center;line-height:28px;font-family:'Oswald',sans-serif;font-weight:700;font-size:1rem;color:var(--gold-light);flex-shrink:0}
+.horse-info{flex:1;margin-left:10px}
+.horse-name{font-family:'Playfair Display',serif;font-size:1rem;color:var(--cream)}
+.horse-jockey{font-size:0.78rem;color:var(--muted)}
+.horse-odds{font-family:'Oswald',sans-serif;font-size:1.1rem;font-weight:700;color:var(--gold-light)}
+.horse-row{display:flex;align-items:center}
+
+.bet-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.bet-type-btn{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 8px;cursor:pointer;transition:all 0.2s;text-align:center}.bet-type-btn:hover{border-color:var(--gold)}
+.bet-type-btn.selected{border-color:var(--gold);background:rgba(201,168,76,0.12)}
+.bet-type-name{font-family:'Oswald',sans-serif;font-size:0.8rem;color:var(--cream);text-transform:uppercase;letter-spacing:1px}
+.bet-type-desc{font-size:0.7rem;color:var(--muted);margin-top:2px}
+
+.quick-amounts{display:flex;gap:6px;flex-wrap:wrap}
+.quick-btn{background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:'Oswald',sans-serif;font-size:0.72rem;color:var(--muted);cursor:pointer;transition:all 0.2s}
+.quick-btn:hover{border-color:var(--gold);color:var(--gold-light)}
+
+.bet-slip-item{background:#1a1e22;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.bet-slip-type{font-family:'Oswald',sans-serif;color:var(--gold);font-size:0.75rem;text-transform:uppercase}
+.bet-slip-horse{color:var(--cream);font-family:'Playfair Display',serif}
+.bet-slip-amt{font-family:'Oswald',sans-serif;color:var(--gold-light);font-size:1rem;font-weight:700}
+.bet-slip-payout{font-size:0.72rem;color:var(--muted)}
+
+.lb-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.lb-rank{font-family:'Oswald',sans-serif;font-size:1.1rem;font-weight:700;width:28px;text-align:center}
+.rank-1{color:#FFD700}.rank-2{color:#C0C0C0}.rank-3{color:#CD7F32}
+.lb-name{flex:1;font-family:'Playfair Display',serif;font-size:1rem}
+.lb-money{font-family:'Oswald',sans-serif;color:var(--gold-light);font-size:1rem;font-weight:700}
+
+.wheel-wrap{position:relative;width:100%;max-width:300px;margin:0 auto 20px;aspect-ratio:1}
+#wheelCanvas{width:100%;height:100%;border-radius:50%;border:4px solid var(--gold)}
+.wheel-pointer{position:absolute;top:-18px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:28px solid var(--gold)}
+
+.admin-section{background:#1e2226;border:1px solid var(--gold-dark);border-radius:12px;padding:16px;margin-bottom:14px}
+.admin-title{font-family:'Oswald',sans-serif;color:var(--gold);font-size:0.85rem;text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
+.admin-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.admin-input{background:#252a2f;border:1px solid var(--gold-dark);border-radius:6px;padding:8px 10px;color:var(--cream);font-family:'Crimson Pro',serif;font-size:0.9rem;outline:none;flex:1;min-width:100px}
+.admin-input:focus{border-color:var(--gold)}
+
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-family:'Oswald',sans-serif;font-size:0.65rem;text-transform:uppercase;letter-spacing:1px}
+.badge-gold{background:rgba(201,168,76,0.2);color:var(--gold-light);border:1px solid var(--gold-dark)}
+.badge-green{background:rgba(61,139,61,0.2);color:#7dff7d;border:1px solid var(--green-light)}
+.badge-red{background:rgba(139,26,26,0.2);color:#ff9999;border:1px solid var(--red)}
+
+.result-banner{background:linear-gradient(135deg,#0d1f0d,#1a3a0a);border:2px solid var(--gold);border-radius:12px;padding:20px;text-align:center;margin-bottom:16px}
+.result-title{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--gold-light);margin-bottom:8px}
+
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a3a1a;border:1px solid var(--gold);color:var(--cream);padding:10px 22px;border-radius:30px;font-family:'Oswald',sans-serif;font-size:0.8rem;letter-spacing:1px;z-index:999;transition:transform 0.3s,opacity 0.3s;opacity:0;pointer-events:none;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--card);border:2px solid var(--gold);border-radius:16px;padding:24px;max-width:360px;width:100%;text-align:center}
+.modal-title{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--gold-light);margin-bottom:12px}
+.modal-prize{font-family:'Oswald',sans-serif;font-size:2.5rem;color:var(--gold);margin:16px 0;font-weight:700}
+
+.input-amount{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--cream);font-family:'Oswald',sans-serif;font-size:1.1rem;width:120px;outline:none}
+.input-amount:focus{border-color:var(--gold)}
+
+.spin-btn{background:linear-gradient(135deg,var(--gold-dark),var(--gold));color:var(--brown);padding:14px 32px;font-size:1rem;border:none;border-radius:10px;cursor:pointer;font-family:'Oswald',sans-serif;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-top:10px;transition:all 0.2s;width:100%}
+.spin-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+.confirm-table{width:100%;font-size:0.85rem;margin:12px 0}
+.confirm-table td{padding:4px 8px;color:var(--cream)}
+.confirm-table td:first-child{color:var(--muted);font-family:'Oswald',sans-serif;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px}
+.confirm-table td:last-child{text-align:right;font-family:'Oswald',sans-serif;color:var(--gold-light)}
+
+.no-horses{text-align:center;padding:40px 20px;color:var(--muted);font-family:'Oswald',sans-serif;font-size:0.8rem;letter-spacing:2px;text-transform:uppercase}
+
+.race-status-bar{background:#2a2f34;border-bottom:1px solid var(--gold-dark);padding:8px 16px;text-align:center;font-family:'Oswald',sans-serif;font-size:0.75rem;letter-spacing:2px;color:var(--gold-light);text-transform:uppercase}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.pulse{animation:pulse 2s infinite}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div style="background:rgba(22,26,30,0.88);border:1px solid var(--border);border-radius:16px;padding:28px 24px;width:100%;max-width:380px;backdrop-filter:blur(8px)">
+    <div style="display:flex;align-items:center;gap:16px;width:100%;margin-bottom:24px">
+      <img src="chairman.jpg" alt="The Chairman" class="login-logo" style="margin-bottom:0">
+      <div>
+        <div class="login-title" style="margin-bottom:2px;font-size:1.6rem">The Chairman's Casino</div>
+        <div class="login-sub" style="margin-bottom:0">Kentucky Derby 2026</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Your Name</label>
+      <input type="text" id="loginName" placeholder="Enter your name" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>PIN (4 digits)</label>
+      <input type="password" id="loginPin" placeholder="••••" maxlength="4" inputmode="numeric">
+    </div>
+    <button class="btn btn-gold" onclick="handleLogin()" style="margin-bottom:12px">Enter the Winner's Circle</button>
+    <div style="font-size:0.8rem;color:var(--muted);text-align:left;margin-top:4px">New guest? Just enter your name &amp; choose a PIN.<br>You'll receive <span style="color:var(--gold-light);font-weight:600">$1,000</span> + a spin of the wheel!</div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen" style="display:none;min-height:100vh">
+  <div class="race-status-bar pulse" id="statusBar">🏇 Kentucky Derby 2026 — Churchill Downs</div>
+  <div class="header">
+    <img src="chairman.jpg" alt="Chairman" class="logo-img">
+    <div class="header-text">
+      <div class="header-title">The Chairman's Casino</div>
+      <div class="header-sub" id="headerUser">Kentucky Derby 2026</div>
+    </div>
+    <div class="balance-chip">
+      <div class="balance-label">Balance</div>
+      <div class="balance-amt" id="balanceDisplay">$1,000</div>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="nav-btn active" onclick="showPage('bet')" id="nav-bet">🏇 Bet</button>
+    <button class="nav-btn" onclick="showPage('mybets')" id="nav-mybets">📋 My Bets</button>
+    <button class="nav-btn" onclick="showPage('leaders')" id="nav-leaders">🏆 Board</button>
+    <button class="nav-btn" onclick="showPage('admin')" id="nav-admin">⚙️ Admin</button>
+  </div>
+
+  <!-- BET PAGE -->
+  <div class="page active" id="page-bet">
+    <div class="section-title" style="margin-top:4px">Place Your Bets</div>
+    <div class="section-sub">Kentucky Derby 2026 — The Run for the Roses</div>
+    <div style="margin-bottom:8px;font-family:'Oswald',sans-serif;font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Bet Type</div>
+    <div class="bet-type-grid" id="betTypeGrid"></div>
+    <div style="margin-bottom:8px;font-family:'Oswald',sans-serif;font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Select Horse(s)</div>
+    <div id="horseList"></div>
+    <div style="margin-bottom:8px;font-family:'Oswald',sans-serif;font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:8px">Wager Amount</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+      <input type="number" class="input-amount" id="betAmount" value="20" min="1" oninput="updatePayoutPreview()">
+      <div class="quick-amounts">
+        <div class="quick-btn" onclick="setAmt(10)">$10</div>
+        <div class="quick-btn" onclick="setAmt(25)">$25</div>
+        <div class="quick-btn" onclick="setAmt(50)">$50</div>
+        <div class="quick-btn" onclick="setAmt(100)">$100</div>
+        <div class="quick-btn" onclick="setAmt('max')">Max</div>
+      </div>
+    </div>
+    <div class="card2" id="payoutPreview" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-family:'Oswald',sans-serif;font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Potential Payout</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--cream)" id="payoutHorseName">—</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Oswald',sans-serif;font-size:1.5rem;color:var(--gold-light);font-weight:700" id="payoutAmt">$0</div>
+          <div style="font-size:0.72rem;color:var(--muted)" id="payoutOdds"></div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-gold" onclick="placeBet()" style="width:100%;margin-top:6px">Place Bet</button>
+    <div style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:8px">All bets are for entertainment only 🎉</div>
+  </div>
+
+  <!-- MY BETS PAGE -->
+  <div class="page" id="page-mybets">
+    <div class="section-title" style="margin-top:4px">My Bets</div>
+    <div class="section-sub">Active Wagers</div>
+    <div id="myBetsList"></div>
+    <div id="myBetsEmpty" style="display:none" class="no-horses">No bets placed yet.<br>Head to the Bet tab to get started!</div>
+    <div id="resolvedSection" style="display:none">
+      <hr class="divider">
+      <div class="section-sub">Race Results</div>
+      <div id="resolvedBets"></div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="page" id="page-leaders">
+    <div class="section-title" style="margin-top:4px">Leaderboard</div>
+    <div class="section-sub">Race to the riches</div>
+    <div id="raceResultBanner" style="display:none">
+      <div class="result-banner">
+        <div class="result-title">🏁 Race Complete!</div>
+        <div style="font-size:0.85rem;color:var(--muted);font-family:'Oswald',sans-serif;letter-spacing:1px" id="resultSummary"></div>
+      </div>
+    </div>
+    <div id="leaderboardList"></div>
+  </div>
+
+  <!-- ADMIN PAGE -->
+  <div class="page" id="page-admin">
+    <div class="section-title" style="margin-top:4px">Admin Panel</div>
+    <div class="section-sub">Chairman's Control Room</div>
+
+    <div class="admin-section">
+      <div class="admin-title">Race Status</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-outline btn-sm" onclick="setRaceStatus('open')">Open Betting</button>
+        <button class="btn-outline btn-sm" onclick="setRaceStatus('closed')">Close Betting</button>
+        <button class="btn-outline btn-sm" onclick="setRaceStatus('results')">Enter Results</button>
+      </div>
+      <div style="margin-top:10px;font-family:'Oswald',sans-serif;font-size:0.75rem;color:var(--muted)">Current status: <span id="statusLabel" style="color:var(--gold-light)">open</span></div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-title">Add Horse</div>
+      <div class="admin-row">
+        <input class="admin-input" id="ah-num" placeholder="#" style="width:55px;flex:none" type="number">
+        <input class="admin-input" id="ah-name" placeholder="Horse Name">
+        <input class="admin-input" id="ah-jockey" placeholder="Jockey">
+      </div>
+      <div class="admin-row">
+        <input class="admin-input" id="ah-odds" placeholder="Odds e.g. 5-1">
+        <input class="admin-input" id="ah-color" placeholder="Silks color">
+        <button class="btn btn-gold btn-sm" onclick="addHorse()">Add</button>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-title">Horse Lineup <span id="horseCount" class="badge badge-gold">0 horses</span></div>
+      <div id="adminHorseList"></div>
+    </div>
+
+    <div class="admin-section" id="resultSection" style="display:none">
+      <div class="admin-title">Enter Race Results</div>
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px">Select finishing positions</div>
+      <div style="margin-bottom:8px">
+        <div style="font-family:'Oswald',sans-serif;font-size:0.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:4px">1st Place (Win)</div>
+        <select class="admin-input" id="res-1st" style="width:100%"><option value="">Select horse...</option></select>
+      </div>
+      <div style="margin-bottom:8px">
+        <div style="font-family:'Oswald',sans-serif;font-size:0.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:4px">2nd Place</div>
+        <select class="admin-input" id="res-2nd" style="width:100%"><option value="">Select horse...</option></select>
+      </div>
+      <div style="margin-bottom:8px">
+        <div style="font-family:'Oswald',sans-serif;font-size:0.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:4px">3rd Place</div>
+        <select class="admin-input" id="res-3rd" style="width:100%"><option value="">Select horse...</option></select>
+      </div>
+      <button class="btn btn-gold" style="width:100%" onclick="processResults()">Process Results &amp; Pay Out</button>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-title">Players <span id="playerCount" class="badge badge-gold">0</span></div>
+      <div id="adminUsers"></div>
+    </div>
+
+    <div style="margin-top:10px">
+      <button class="btn-danger" onclick="if(confirm('Reset ALL data? This cannot be undone.'))resetAll()">⚠️ Reset All Data</button>
+    </div>
+  </div>
+</div>
+
+<!-- WHEEL MODAL -->
+<div class="modal-bg" id="wheelModal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">🎰 New Member Bonus!</div>
+    <div style="font-size:0.85rem;color:var(--muted);margin-bottom:16px">Welcome to the Chairman's Casino!<br>Spin the wheel for a bonus prize!</div>
+    <div class="wheel-wrap">
+      <div class="wheel-pointer"></div>
+      <canvas id="wheelCanvas" width="300" height="300"></canvas>
+    </div>
+    <button class="spin-btn" id="spinBtn" onclick="spinWheel()">SPIN THE WHEEL</button>
+    <div id="wheelResult" style="display:none;margin-top:16px">
+      <div class="modal-prize" id="prizeDisplay"></div>
+      <div style="color:var(--muted);font-size:0.85rem;margin-bottom:16px">Added to your balance!</div>
+      <button class="btn btn-gold" onclick="closeWheel()">Start Betting!</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM BET MODAL -->
+<div class="modal-bg" id="confirmModal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Confirm Your Bet</div>
+    <table class="confirm-table" id="confirmTable"></table>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn-outline" onclick="document.getElementById('confirmModal').style.display='none'" style="flex:1">Cancel</button>
+      <button class="btn btn-gold" onclick="confirmBet()" style="flex:1">Place Bet!</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var DB={},currentUser=null,pendingBet=null,raceStatus='open',horses=[],raceResults=null;
+var selectedBetType='win',selectedHorses=[],wheelAngle=0,isSpinning=false;
+
+var BET_TYPES=[
+  {id:'win',name:'Win',desc:'Pick the winner',mult:1,horses:1},
+  {id:'place',name:'Place',desc:'1st or 2nd',mult:0.5,horses:1},
+  {id:'show',name:'Show',desc:'1st, 2nd, or 3rd',mult:0.3,horses:1},
+  {id:'exacta',name:'Exacta',desc:'Exact 1st & 2nd',mult:2.5,horses:2},
+  {id:'trifecta',name:'Trifecta',desc:'Exact top 3',mult:6,horses:3},
+  {id:'quinella',name:'Quinella',desc:'1st & 2nd any order',mult:1.5,horses:2},
+];
+
+var WHEEL_PRIZES=[
+  {label:'$10',value:10},{label:'$10',value:10},{label:'$10',value:10},{label:'$10',value:10},
+  {label:'$10',value:10},{label:'$10',value:10},{label:'$10',value:10},{label:'$10',value:10},
+  {label:'$10',value:10},{label:'$10',value:10},
+  {label:'$25',value:25},{label:'$25',value:25},{label:'$25',value:25},{label:'$25',value:25},
+  {label:'$50',value:50},{label:'$50',value:50},{label:'$50',value:50},{label:'$50',value:50},
+  {label:'$75',value:75},{label:'$75',value:75},
+  {label:'$100',value:100},
+];
+var WHEEL_COLORS=['#1a4a1a','#2d6e2d','#C9A84C','#8B6914','#1a3a0a','#3d8b3d','#c9a84c','#1a4a1a','#2d6e2d','#8B6914'];
+
+function save(){try{localStorage.setItem('ccc_db',JSON.stringify({DB:DB,horses:horses,raceStatus:raceStatus,raceResults:raceResults}))}catch(e){}}
+function load(){
+  try{
+    var d=localStorage.getItem('ccc_db');
+    if(d){var p=JSON.parse(d);DB=p.DB||{};horses=p.horses||[];raceStatus=p.raceStatus||'open';raceResults=p.raceResults||null;}
+  }catch(e){}
+}
+
+function handleLogin(){
+  var name=document.getElementById('loginName').value.trim();
+  var pin=document.getElementById('loginPin').value.trim();
+  if(!name||pin.length<4){showToast('Please enter your name and a 4-digit PIN');return;}
+  var key=name.toLowerCase().replace(/\s+/g,'_');
+  var isNew=false;
+  if(!DB[key]){
+    DB[key]={name:name,pin:pin,balance:1000,bets:[],wheelSpun:false,joinTime:Date.now()};
+    isNew=true;
+  }else if(DB[key].pin!==pin){showToast('Wrong PIN – try again!');return;}
+  currentUser=key;
+  save();
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appScreen').style.display='block';
+  updateHeader();renderBetPage();renderLeaderboard();renderAdminUsers();
+  if(isNew&&!DB[key].wheelSpun){setTimeout(function(){showWheelModal();},600);}
+}
+
+function updateHeader(){
+  if(!currentUser)return;
+  var u=DB[currentUser];
+  document.getElementById('headerUser').textContent=u.name;
+  document.getElementById('balanceDisplay').textContent='$'+u.balance.toLocaleString();
+}
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('page-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  if(id==='mybets')renderMyBets();
+  if(id==='leaders')renderLeaderboard();
+  if(id==='admin'){renderAdminHorses();renderAdminUsers();}
+}
+
+function showWheelModal(){
+  document.getElementById('wheelModal').style.display='flex';
+  drawWheel(0);
+}
+function closeWheel(){
+  document.getElementById('wheelModal').style.display='none';
+  document.getElementById('wheelResult').style.display='none';
+  document.getElementById('spinBtn').style.display='block';
+  document.getElementById('spinBtn').disabled=false;
+}
+
+function drawWheel(rotation){
+  var canvas=document.getElementById('wheelCanvas');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var cx=150,cy=150,r=144,n=WHEEL_PRIZES.length,arc=2*Math.PI/n;
+  ctx.clearRect(0,0,300,300);
+  for(var i=0;i<n;i++){
+    var start=rotation+i*arc,end=start+arc;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);
+    ctx.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length];ctx.fill();
+    ctx.strokeStyle='rgba(201,168,76,0.4)';ctx.lineWidth=1;ctx.stroke();
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(start+arc/2);
+    ctx.textAlign='right';ctx.fillStyle='#FDF6E3';
+    ctx.font='bold 12px Oswald,sans-serif';
+    ctx.fillText(WHEEL_PRIZES[i].label,r-10,5);ctx.restore();
+  }
+  ctx.beginPath();ctx.arc(cx,cy,20,0,Math.PI*2);
+  ctx.fillStyle='#C9A84C';ctx.fill();
+  ctx.fillStyle='#3D1F00';ctx.font='bold 9px Oswald,sans-serif';
+  ctx.textAlign='center';ctx.fillText('SPIN',cx,cy+3);
+}
+
+function spinWheel(){
+  if(isSpinning)return;
+  isSpinning=true;
+  document.getElementById('spinBtn').disabled=true;
+  var idx=Math.floor(Math.random()*WHEEL_PRIZES.length);
+  var n=WHEEL_PRIZES.length,arc=2*Math.PI/n;
+  var targetAngle=2*Math.PI*6+(Math.PI*2-(idx*arc+arc/2))-Math.PI/2;
+  var start=performance.now(),duration=4500,startAngle=wheelAngle;
+  function animate(now){
+    var elapsed=now-start,t=Math.min(elapsed/duration,1);
+    var ease=t<0.5?4*t*t*t:(t-1)*(2*t-2)*(2*t-2)+1;
+    var angle=startAngle+targetAngle*ease;
+    wheelAngle=angle;drawWheel(angle);
+    if(t<1){requestAnimationFrame(animate);}else{
+      var prize=WHEEL_PRIZES[idx];
+      DB[currentUser].balance+=prize.value;
+      DB[currentUser].wheelSpun=true;
+      save();updateHeader();
+      document.getElementById('prizeDisplay').textContent='+'+prize.label;
+      document.getElementById('wheelResult').style.display='block';
+      document.getElementById('spinBtn').style.display='none';
+      isSpinning=false;
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function renderBetPage(){renderBetTypes();renderHorses();updateStatusBar();}
+
+function updateStatusBar(){
+  var bar=document.getElementById('statusBar');
+  var sl=document.getElementById('statusLabel');
+  if(raceStatus==='open'){bar.textContent='🏇 Kentucky Derby 2026 — Betting OPEN — Churchill Downs';if(sl)sl.textContent='open';}
+  else if(raceStatus==='closed'){bar.textContent='🚫 Betting CLOSED — Race about to start!';if(sl)sl.textContent='closed';}
+  else{bar.textContent='🏁 Race Complete — Results Posted!';if(sl)sl.textContent='results';}
+}
+
+function renderBetTypes(){
+  var grid=document.getElementById('betTypeGrid');
+  grid.innerHTML=BET_TYPES.map(function(t){
+    return '<div class="bet-type-btn '+(t.id===selectedBetType?'selected':'')+'" onclick="selectBetType(\''+t.id+'\')">'+
+      '<div class="bet-type-name">'+t.name+'</div><div class="bet-type-desc">'+t.desc+'</div></div>';
+  }).join('');
+}
+
+function selectBetType(id){
+  selectedBetType=id;selectedHorses=[];
+  renderBetTypes();renderHorses();updatePayoutPreview();
+}
+
+function renderHorses(){
+  var list=document.getElementById('horseList');
+  if(!horses.length){list.innerHTML='<div class="no-horses">No horses in the lineup yet.<br>Check back soon or ask the Chairman!</div>';return;}
+  list.innerHTML=horses.map(function(h){
+    return '<div class="horse-card '+(selectedHorses.includes(h.num)?'selected':'')+'" onclick="toggleHorse('+h.num+')">'+
+      '<div class="horse-row"><span class="horse-num">'+h.num+'</span>'+
+      '<div class="horse-info"><div class="horse-name">'+h.name+'</div>'+
+      '<div class="horse-jockey">'+(h.jockey?'Jockey: '+h.jockey:'')+'</div></div>'+
+      '<div style="text-align:right"><div class="horse-odds">'+h.odds+'</div>'+
+      (h.color?'<div style="font-size:0.7rem;color:var(--muted)">'+h.color+'</div>':'')+
+      '</div></div></div>';
+  }).join('');
+}
+
+function toggleHorse(num){
+  var bt=BET_TYPES.find(function(b){return b.id===selectedBetType;});
+  var need=bt.horses;
+  if(selectedHorses.includes(num)){selectedHorses=selectedHorses.filter(function(h){return h!==num;});}
+  else{if(selectedHorses.length>=need)selectedHorses.shift();selectedHorses.push(num);}
+  renderHorses();updatePayoutPreview();
+}
+
+function updatePayoutPreview(){
+  var preview=document.getElementById('payoutPreview');
+  var bt=BET_TYPES.find(function(b){return b.id===selectedBetType;});
+  if(selectedHorses.length<bt.horses){preview.style.display='none';return;}
+  var amt=parseFloat(document.getElementById('betAmount').value)||0;
+  var h=horses.find(function(x){return x.num===selectedHorses[0];});
+  if(!h){preview.style.display='none';return;}
+  var oddsStr=h.odds||'5-1';
+  var parts=oddsStr.includes('-')?oddsStr.split('-').map(Number):[parseFloat(oddsStr)||5,1];
+  var oddsVal=parts[0]/parts[1];
+  var payout=Math.round(amt*(1+oddsVal*bt.mult));
+  var names=selectedHorses.map(function(n){return (horses.find(function(x){return x.num===n;})||{name:'?'}).name;}).join(' / ');
+  document.getElementById('payoutHorseName').textContent=names;
+  document.getElementById('payoutAmt').textContent='$'+payout.toLocaleString();
+  document.getElementById('payoutOdds').textContent=bt.name+' @ '+oddsStr;
+  preview.style.display='block';
+}
+
+function setAmt(v){
+  var u=DB[currentUser];
+  document.getElementById('betAmount').value=v==='max'?u.balance:v;
+  updatePayoutPreview();
+}
+
+function placeBet(){
+  if(raceStatus!=='open'){showToast('Betting is currently closed!');return;}
+  var bt=BET_TYPES.find(function(b){return b.id===selectedBetType;});
+  if(selectedHorses.length<bt.horses){showToast('Select '+bt.horses+' horse(s) for '+bt.name);return;}
+  var amt=parseFloat(document.getElementById('betAmount').value);
+  if(!amt||amt<1){showToast('Enter a valid bet amount');return;}
+  var u=DB[currentUser];
+  if(amt>u.balance){showToast('Insufficient balance!');return;}
+  var h=horses.filter(function(x){return selectedHorses.includes(x.num);});
+  var oddsStr=h[0].odds||'5-1';
+  var parts=oddsStr.includes('-')?oddsStr.split('-').map(Number):[parseFloat(oddsStr)||5,1];
+  var oddsVal=parts[0]/parts[1];
+  var payout=Math.round(amt*(1+oddsVal*bt.mult));
+  pendingBet={type:bt.id,typeName:bt.name,horses:selectedHorses,horseNames:h.map(function(x){return x.name;}),amount:amt,payout:payout,odds:oddsStr};
+  var t=document.getElementById('confirmTable');
+  t.innerHTML='<tr><td>Bet Type</td><td>'+bt.name+'</td></tr>'+
+    '<tr><td>Horse(s)</td><td>'+h.map(function(x){return x.name;}).join(' / ')+'</td></tr>'+
+    '<tr><td>Wager</td><td>$'+amt+'</td></tr>'+
+    '<tr><td>Potential Win</td><td>$'+payout.toLocaleString()+'</td></tr>';
+  document.getElementById('confirmModal').style.display='flex';
+}
+
+function confirmBet(){
+  if(!pendingBet)return;
+  var u=DB[currentUser];
+  u.balance-=pendingBet.amount;
+  var bet=Object.assign({},pendingBet,{id:Date.now(),status:'pending',time:Date.now()});
+  u.bets.push(bet);save();updateHeader();
+  document.getElementById('confirmModal').style.display='none';
+  showToast('Bet placed! Good luck! 🍀');pendingBet=null;
+}
+
+function renderMyBets(){
+  var u=DB[currentUser];
+  var active=u.bets.filter(function(b){return b.status==='pending';});
+  var done=u.bets.filter(function(b){return b.status!=='pending';});
+  var list=document.getElementById('myBetsList');
+  var empty=document.getElementById('myBetsEmpty');
+  if(!active.length){list.innerHTML='';empty.style.display='block';}
+  else{
+    empty.style.display='none';
+    list.innerHTML=active.map(function(b){
+      return '<div class="bet-slip-item"><div><div class="bet-slip-type">'+b.typeName+'</div>'+
+        '<div class="bet-slip-horse">'+b.horseNames.join(' / ')+'</div>'+
+        '<div class="bet-slip-payout">Odds: '+b.odds+'</div></div>'+
+        '<div style="text-align:right"><div class="bet-slip-amt">$'+b.amount+'</div>'+
+        '<div class="bet-slip-payout">Win: $'+b.payout.toLocaleString()+'</div>'+
+        '<div><span class="badge badge-gold">Pending</span></div></div></div>';
+    }).join('');
+  }
+  var rs=document.getElementById('resolvedSection'),rb=document.getElementById('resolvedBets');
+  if(done.length){
+    rs.style.display='block';
+    rb.innerHTML=done.map(function(b){
+      return '<div class="bet-slip-item"><div><div class="bet-slip-type">'+b.typeName+'</div>'+
+        '<div class="bet-slip-horse">'+b.horseNames.join(' / ')+'</div></div>'+
+        '<div style="text-align:right"><div class="bet-slip-amt">$'+b.amount+'</div>'+
+        '<div><span class="badge '+(b.status==='won'?'badge-green':'badge-red')+'">'+(b.status==='won'?'WON $'+b.payout:'LOST')+'</span></div></div></div>';
+    }).join('');
+  }else rs.style.display='none';
+}
+
+function renderLeaderboard(){
+  var sorted=Object.values(DB).sort(function(a,b){return b.balance-a.balance;});
+  var list=document.getElementById('leaderboardList');
+  var banner=document.getElementById('raceResultBanner');
+  if(raceResults){
+    banner.style.display='block';
+    var h1=horses.find(function(x){return x.num===raceResults[0];})||{name:'?'};
+    var h2=horses.find(function(x){return x.num===raceResults[1];})||{name:'?'};
+    var h3=horses.find(function(x){return x.num===raceResults[2];})||{name:'?'};
+    document.getElementById('resultSummary').textContent='1st: '+h1.name+' | 2nd: '+h2.name+' | 3rd: '+h3.name;
+  }else banner.style.display='none';
+  if(!sorted.length){list.innerHTML='<div class="no-horses">No players yet</div>';return;}
+  var emojis=['🥇','🥈','🥉'];
+  list.innerHTML=sorted.map(function(u,i){
+    var rank=i+1;
+    var rc=rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':'';
+    var bets=u.bets.length;
+    return '<div class="lb-row"><div class="lb-rank '+rc+'">'+(emojis[i]||rank)+'</div>'+
+      '<div class="lb-name">'+u.name+'<div style="font-size:0.72rem;color:var(--muted)">'+bets+' bet'+(bets!==1?'s':'')+'</div></div>'+
+      '<div class="lb-money">$'+u.balance.toLocaleString()+'</div></div>';
+  }).join('');
+}
+
+function setRaceStatus(s){
+  raceStatus=s;updateStatusBar();save();
+  if(s==='results'){document.getElementById('resultSection').style.display='block';populateResultDropdowns();}
+  else document.getElementById('resultSection').style.display='none';
+  showToast('Status: '+s);
+}
+
+function addHorse(){
+  var num=parseInt(document.getElementById('ah-num').value);
+  var name=document.getElementById('ah-name').value.trim();
+  var jockey=document.getElementById('ah-jockey').value.trim();
+  var odds=document.getElementById('ah-odds').value.trim();
+  var color=document.getElementById('ah-color').value.trim();
+  if(!num||!name){showToast('Horse number and name required');return;}
+  if(horses.find(function(h){return h.num===num;})){showToast('Horse #'+num+' already exists');return;}
+  horses.push({num:num,name:name,jockey:jockey,odds:odds||'5-1',color:color});
+  horses.sort(function(a,b){return a.num-b.num;});
+  save();renderAdminHorses();renderHorses();
+  document.getElementById('ah-num').value='';document.getElementById('ah-name').value='';
+  document.getElementById('ah-jockey').value='';document.getElementById('ah-odds').value='';
+  document.getElementById('ah-color').value='';
+  showToast(name+' added!');
+}
+
+function removeHorse(num){
+  if(!confirm('Remove horse #'+num+'?'))return;
+  horses=horses.filter(function(h){return h.num!==num;});
+  save();renderAdminHorses();renderHorses();
+}
+
+function renderAdminHorses(){
+  var el=document.getElementById('adminHorseList');
+  document.getElementById('horseCount').textContent=horses.length+' horse'+(horses.length!==1?'s':'');
+  if(!horses.length){el.innerHTML='<div style="color:var(--muted);font-size:0.8rem;padding:8px">No horses added yet</div>';return;}
+  el.innerHTML=horses.map(function(h){
+    return '<div class="card2" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px">'+
+      '<div><span style="font-family:Oswald,sans-serif;color:var(--gold);margin-right:8px">#'+h.num+'</span>'+
+      '<span style="font-family:\'Playfair Display\',serif">'+h.name+'</span>'+
+      '<div style="font-size:0.75rem;color:var(--muted)">'+(h.jockey?h.jockey+' · ':'')+h.odds+'</div></div>'+
+      '<button class="btn-danger" onclick="removeHorse('+h.num+')">✕</button></div>';
+  }).join('');
+}
+
+function populateResultDropdowns(){
+  var opts='<option value="">Select...</option>'+horses.map(function(h){return '<option value="'+h.num+'">'+h.name+'</option>';}).join('');
+  ['res-1st','res-2nd','res-3rd'].forEach(function(id){document.getElementById(id).innerHTML=opts;});
+}
+
+function processResults(){
+  var p1=parseInt(document.getElementById('res-1st').value);
+  var p2=parseInt(document.getElementById('res-2nd').value);
+  var p3=parseInt(document.getElementById('res-3rd').value);
+  if(!p1||!p2||!p3){showToast('Please select all 3 positions');return;}
+  if(new Set([p1,p2,p3]).size<3){showToast('Each position must be a different horse');return;}
+  raceResults=[p1,p2,p3];raceStatus='results';save();
+  Object.values(DB).forEach(function(user){
+    user.bets.forEach(function(bet){
+      if(bet.status!=='pending')return;
+      var won=false;
+      if(bet.type==='win')won=bet.horses[0]===p1;
+      else if(bet.type==='place')won=[p1,p2].includes(bet.horses[0]);
+      else if(bet.type==='show')won=[p1,p2,p3].includes(bet.horses[0]);
+      else if(bet.type==='exacta')won=bet.horses[0]===p1&&bet.horses[1]===p2;
+      else if(bet.type==='trifecta')won=bet.horses[0]===p1&&bet.horses[1]===p2&&bet.horses[2]===p3;
+      else if(bet.type==='quinella')won=bet.horses.includes(p1)&&bet.horses.includes(p2);
+      bet.status=won?'won':'lost';
+      if(won)user.balance+=bet.payout;
+    });
+  });
+  save();updateHeader();updateStatusBar();renderLeaderboard();
+  showToast('Results processed & payouts complete! 🏁');
+}
+
+function renderAdminUsers(){
+  var el=document.getElementById('adminUsers');
+  var pc=document.getElementById('playerCount');
+  var users=Object.values(DB);
+  if(pc)pc.textContent=users.length;
+  if(!users.length){el.innerHTML='<div style="color:var(--muted);font-size:0.8rem">No players yet</div>';return;}
+  el.innerHTML=users.map(function(u){
+    return '<div class="card2" style="display:flex;justify-content:space-between;align-items:center">'+
+      '<div><div style="font-family:\'Playfair Display\',serif">'+u.name+'</div>'+
+      '<div style="font-size:0.75rem;color:var(--muted)">'+u.bets.length+' bet(s) · PIN: '+u.pin+'</div></div>'+
+      '<div style="font-family:Oswald,sans-serif;color:var(--gold-light)">$'+u.balance.toLocaleString()+'</div></div>';
+  }).join('');
+}
+
+function resetAll(){
+  localStorage.removeItem('ccc_db');
+  DB={};horses=[];raceStatus='open';raceResults=null;currentUser=null;
+  document.getElementById('appScreen').style.display='none';
+  document.getElementById('loginScreen').style.display='block';
+  showToast('All data reset!');
+}
+
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2800);
+}
+
+load();
+drawWheel(0);
+</script>
+</body>
+</html>
