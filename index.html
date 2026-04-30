@@ -460,7 +460,14 @@ function startListeners(){
   _usersListener=setInterval(function(){
     fbGet('/users',function(data){
       if(!data)return;
+      // Merge remote data but preserve current user's local state
+      // (in case a bet was just placed and not yet re-fetched)
+      var localUser = currentUser && DB[currentUser] ? DB[currentUser] : null;
       DB=data;
+      // If remote doesn't have the current user yet (race condition on new signup), keep local
+      if(currentUser && !DB[currentUser] && localUser){
+        DB[currentUser]=localUser;
+      }
       updateHeader();
       renderLeaderboard();
       if(adminUnlocked)renderAdminUsers();
@@ -477,6 +484,21 @@ function load(cb){
       DB=data.users||{};
       raceStatus=(data.game&&data.game.raceStatus)||'open';
       raceResults=(data.game&&data.game.raceResults)||null;
+    }
+    if(cb)cb();
+  });
+}
+
+// ── Fetch all users from Firebase and merge into DB, then re-render ──
+function refreshAllUsers(cb){
+  fbGet('/users',function(data){
+    if(data){
+      // Merge: keep any local in-flight changes for currentUser, overwrite rest
+      var merged=data;
+      if(currentUser && DB[currentUser]){
+        merged[currentUser]=DB[currentUser];
+      }
+      DB=merged;
     }
     if(cb)cb();
   });
@@ -516,7 +538,12 @@ function enterApp(key,isNew){
   currentUser=key;
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
-  updateHeader();renderBetPage();renderLeaderboard();
+  updateHeader();renderBetPage();
+  // Fetch all users first so leaderboard is complete from the start
+  refreshAllUsers(function(){
+    renderLeaderboard();
+    if(adminUnlocked)renderAdminUsers();
+  });
   startListeners();
   if(isNew&&!DB[key].wheelSpun){setTimeout(function(){showWheelModal();},600);}
 }
@@ -534,14 +561,20 @@ function showPage(id){
   document.getElementById('page-'+id).classList.add('active');
   document.getElementById('nav-'+id).classList.add('active');
   if(id==='mybets')renderMyBets();
-  if(id==='leaders')renderLeaderboard();
+  if(id==='leaders'){
+    refreshAllUsers(function(){
+      renderLeaderboard();
+    });
+  }
   if(id==='admin'){
     if(adminUnlocked){
       document.getElementById('adminLock').style.display='none';
       document.getElementById('adminPanel').style.display='block';
-      renderAdminHorses();renderAdminUsers();
-      populateResultDropdowns();
-      updateResultPanel();
+      renderAdminHorses();populateResultDropdowns();updateResultPanel();
+      // Refresh all users so admin sees everyone
+      refreshAllUsers(function(){
+        renderAdminUsers();
+      });
     }else{
       document.getElementById('adminLock').style.display='block';
       document.getElementById('adminPanel').style.display='none';
@@ -782,10 +815,14 @@ function checkAdminPw(){
     adminUnlocked=true;
     document.getElementById('adminLock').style.display='none';
     document.getElementById('adminPanel').style.display='block';
-    renderAdminHorses();renderAdminUsers();
+    renderAdminHorses();
     populateResultDropdowns();
     updateResultPanel();
     updateStatusBar();
+    // Refresh all users from Firebase so admin sees everyone
+    refreshAllUsers(function(){
+      renderAdminUsers();
+    });
   }else{
     document.getElementById('adminPwErr').style.display='block';
     document.getElementById('adminPwInput').value='';
