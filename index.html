@@ -246,64 +246,103 @@ body::before{content:'';position:fixed;inset:0;background:rgba(5,15,5,0.78);z-in
 
   <!-- ADMIN PAGE -->
   <div class="page" id="page-admin">
-    <div class="section-title" style="margin-top:4px">Admin Panel</div>
-    <div class="section-sub">Chairman's Control Room</div>
 
-    <div class="admin-section">
-      <div class="admin-title">Race Status</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn-outline btn-sm" onclick="setRaceStatus('open')">Open Betting</button>
-        <button class="btn-outline btn-sm" onclick="setRaceStatus('closed')">Close Betting</button>
-        <button class="btn-outline btn-sm" onclick="setRaceStatus('results')">Enter Results</button>
-      </div>
-      <div style="margin-top:10px;font-family:'Oswald',sans-serif;font-size:0.75rem;color:var(--muted)">Current status: <span id="statusLabel" style="color:var(--gold-light)">open</span></div>
-    </div>
-
-    <div class="admin-section">
-      <div class="admin-title">Add Horse</div>
-      <div class="admin-row">
-        <input class="admin-input" id="ah-num" placeholder="#" style="width:55px;flex:none" type="number">
-        <input class="admin-input" id="ah-name" placeholder="Horse Name">
-        <input class="admin-input" id="ah-jockey" placeholder="Jockey">
-      </div>
-      <div class="admin-row">
-        <input class="admin-input" id="ah-odds" placeholder="Odds e.g. 5-1">
-        <input class="admin-input" id="ah-color" placeholder="Silks color">
-        <input class="admin-input" id="ah-last" placeholder="Last race result">
-        <button class="btn btn-gold btn-sm" onclick="addHorse()">Add</button>
+    <!-- Admin Lock Screen -->
+    <div id="adminLock">
+      <div style="text-align:center;padding:40px 20px">
+        <div style="font-size:2rem;margin-bottom:12px">🔐</div>
+        <div class="section-title">Chairman's Control Room</div>
+        <div class="section-sub">Admin Access Required</div>
+        <div class="form-group" style="max-width:240px;margin:16px auto">
+          <label>Admin Password</label>
+          <input type="password" id="adminPwInput" placeholder="••••" maxlength="10" onkeydown="if(event.key==='Enter')checkAdminPw()">
+        </div>
+        <button class="btn btn-gold" style="max-width:240px" onclick="checkAdminPw()">Unlock</button>
+        <div id="adminPwErr" style="color:#ff9999;font-size:0.8rem;margin-top:10px;display:none">Wrong password. Try again.</div>
       </div>
     </div>
 
-    <div class="admin-section">
-      <div class="admin-title">Horse Lineup <span id="horseCount" class="badge badge-gold">0 horses</span></div>
-      <div id="adminHorseList"></div>
-    </div>
-
-    <div class="admin-section" id="resultSection" style="display:none">
-      <div class="admin-title">Enter Race Results</div>
-      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px">Select finishing positions</div>
-      <div style="margin-bottom:8px">
-        <div style="font-family:'Oswald',sans-serif;font-size:0.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:4px">1st Place (Win)</div>
-        <select class="admin-input" id="res-1st" style="width:100%"><option value="">Select horse...</option></select>
+    <!-- Admin Panel (hidden until unlocked) -->
+    <div id="adminPanel" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div class="section-title" style="margin-top:4px">Admin Panel</div>
+        <button class="btn-outline btn-sm" onclick="lockAdmin()" style="font-size:0.65rem">🔒 Lock</button>
       </div>
-      <div style="margin-bottom:8px">
-        <div style="font-family:'Oswald',sans-serif;font-size:0.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:4px">2nd Place</div>
-        <select class="admin-input" id="res-2nd" style="width:100%"><option value="">Select horse...</option></select>
-      </div>
-      <div style="margin-bottom:8px">
-        <div style="font-family:'Oswald',sans-serif;font-size:0.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:4px">3rd Place</div>
-        <select class="admin-input" id="res-3rd" style="width:100%"><option value="">Select horse...</option></select>
-      </div>
-      <button class="btn btn-gold" style="width:100%" onclick="processResults()">Process Results &amp; Pay Out</button>
-    </div>
+      <div class="section-sub">Chairman's Control Room</div>
 
-    <div class="admin-section">
-      <div class="admin-title">Players <span id="playerCount" class="badge badge-gold">0</span></div>
-      <div id="adminUsers"></div>
-    </div>
+      <!-- Race Status -->
+      <div class="admin-section">
+        <div class="admin-title">Race Status</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-outline btn-sm" onclick="setRaceStatus('open')">Open Betting</button>
+          <button class="btn-outline btn-sm" onclick="setRaceStatus('closed')">Close Betting</button>
+        </div>
+        <div style="margin-top:10px;font-family:'Oswald',sans-serif;font-size:0.75rem;color:var(--muted)">Current status: <span id="statusLabel" style="color:var(--gold-light)">open</span></div>
+      </div>
 
-    <div style="margin-top:10px">
-      <button class="btn-danger" onclick="if(confirm('Reset ALL data? This cannot be undone.'))resetAll()">⚠️ Reset All Data</button>
+      <!-- Post Race Outcome -->
+      <div class="admin-section">
+        <div class="admin-title">🏁 Post Race Outcome</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:12px">Select the official finishing positions. This will resolve all bets and update the leaderboard.</div>
+        <div id="resultAlreadyPosted" style="display:none;background:rgba(201,168,76,0.1);border:1px solid var(--gold-dark);border-radius:8px;padding:12px;margin-bottom:12px;text-align:center">
+          <div style="color:var(--gold-light);font-family:'Oswald',sans-serif;font-size:0.8rem;letter-spacing:1px">RESULTS ALREADY POSTED</div>
+          <div id="postedResultSummary" style="color:var(--cream);margin-top:4px;font-size:0.9rem"></div>
+          <button class="btn-danger" style="margin-top:10px;font-size:0.65rem" onclick="if(confirm('Clear results and reopen betting?'))clearResults()">Clear & Reopen</button>
+        </div>
+        <div id="resultForm">
+          <div style="margin-bottom:8px">
+            <div style="font-family:'Oswald',sans-serif;font-size:0.7rem;color:var(--gold);text-transform:uppercase;margin-bottom:4px">🥇 1st Place (Win)</div>
+            <select class="admin-input" id="res-1st" style="width:100%"><option value="">Select horse...</option></select>
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="font-family:'Oswald',sans-serif;font-size:0.7rem;color:#C0C0C0;text-transform:uppercase;margin-bottom:4px">🥈 2nd Place</div>
+            <select class="admin-input" id="res-2nd" style="width:100%"><option value="">Select horse...</option></select>
+          </div>
+          <div style="margin-bottom:12px">
+            <div style="font-family:'Oswald',sans-serif;font-size:0.7rem;color:#CD7F32;text-transform:uppercase;margin-bottom:4px">🥉 3rd Place</div>
+            <select class="admin-input" id="res-3rd" style="width:100%"><option value="">Select horse...</option></select>
+          </div>
+          <button class="btn btn-gold" style="width:100%" onclick="processResults()">🏆 Post Results &amp; Pay Out All Bets</button>
+        </div>
+      </div>
+
+      <!-- Horse Lineup -->
+      <div class="admin-section">
+        <div class="admin-title">Add Horse</div>
+        <div class="admin-row">
+          <input class="admin-input" id="ah-num" placeholder="#" style="width:55px;flex:none" type="number">
+          <input class="admin-input" id="ah-name" placeholder="Horse Name">
+          <input class="admin-input" id="ah-jockey" placeholder="Jockey">
+        </div>
+        <div class="admin-row">
+          <input class="admin-input" id="ah-odds" placeholder="Odds e.g. 5-1">
+          <input class="admin-input" id="ah-color" placeholder="Silks color">
+          <input class="admin-input" id="ah-last" placeholder="Last race result">
+          <button class="btn btn-gold btn-sm" onclick="addHorse()">Add</button>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-title">Horse Lineup <span id="horseCount" class="badge badge-gold">0 horses</span></div>
+        <div id="adminHorseList"></div>
+      </div>
+
+      <!-- Player Management -->
+      <div class="admin-section">
+        <div class="admin-title">Players <span id="playerCount" class="badge badge-gold">0</span></div>
+        <div style="margin-bottom:10px">
+          <button class="btn-danger" onclick="if(confirm('Remove ALL players? This cannot be undone.'))removeAllPlayers()">🗑️ Remove All Players</button>
+        </div>
+        <div id="adminUsers"></div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="admin-section" style="border-color:#5c1010">
+        <div class="admin-title" style="color:#ff9999">⚠️ Danger Zone</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-danger" onclick="if(confirm('Reset ALL data including horses, bets and players?'))resetAll()">Reset Everything</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -386,7 +425,7 @@ function handleLogin(){
   save();
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
-  updateHeader();renderBetPage();renderLeaderboard();renderAdminUsers();
+  updateHeader();renderBetPage();renderLeaderboard();
   if(isNew&&!DB[key].wheelSpun){setTimeout(function(){showWheelModal();},600);}
 }
 
@@ -404,7 +443,18 @@ function showPage(id){
   document.getElementById('nav-'+id).classList.add('active');
   if(id==='mybets')renderMyBets();
   if(id==='leaders')renderLeaderboard();
-  if(id==='admin'){renderAdminHorses();renderAdminUsers();}
+  if(id==='admin'){
+    if(adminUnlocked){
+      document.getElementById('adminLock').style.display='none';
+      document.getElementById('adminPanel').style.display='block';
+      renderAdminHorses();renderAdminUsers();
+      populateResultDropdowns();
+      updateResultPanel();
+    }else{
+      document.getElementById('adminLock').style.display='block';
+      document.getElementById('adminPanel').style.display='none';
+    }
+  }
 }
 
 function showWheelModal(){
@@ -623,10 +673,86 @@ function renderLeaderboard(){
   }).join('');
 }
 
+var ADMIN_PW='1337';
+var adminUnlocked=false;
+
+function checkAdminPw(){
+  var val=document.getElementById('adminPwInput').value;
+  if(val===ADMIN_PW){
+    adminUnlocked=true;
+    document.getElementById('adminLock').style.display='none';
+    document.getElementById('adminPanel').style.display='block';
+    renderAdminHorses();renderAdminUsers();
+    populateResultDropdowns();
+    updateResultPanel();
+    updateStatusBar();
+  }else{
+    document.getElementById('adminPwErr').style.display='block';
+    document.getElementById('adminPwInput').value='';
+  }
+}
+
+function lockAdmin(){
+  adminUnlocked=false;
+  document.getElementById('adminLock').style.display='block';
+  document.getElementById('adminPanel').style.display='none';
+  document.getElementById('adminPwInput').value='';
+  document.getElementById('adminPwErr').style.display='none';
+}
+
+function updateResultPanel(){
+  var posted=document.getElementById('resultAlreadyPosted');
+  var form=document.getElementById('resultForm');
+  if(raceResults){
+    var h1=horses.find(function(x){return x.num===raceResults[0];})||{name:'?'};
+    var h2=horses.find(function(x){return x.num===raceResults[1];})||{name:'?'};
+    var h3=horses.find(function(x){return x.num===raceResults[2];})||{name:'?'};
+    document.getElementById('postedResultSummary').textContent='🥇 '+h1.name+' · 🥈 '+h2.name+' · 🥉 '+h3.name;
+    posted.style.display='block';
+    form.style.display='none';
+  }else{
+    posted.style.display='none';
+    form.style.display='block';
+  }
+}
+
+function clearResults(){
+  raceResults=null;
+  raceStatus='open';
+  // Revert all resolved bets back to pending and reverse payouts
+  Object.values(DB).forEach(function(user){
+    user.bets.forEach(function(bet){
+      if(bet.status==='won'){user.balance-=bet.payout;}
+      if(bet.status!=='pending'){bet.status='pending';}
+    });
+  });
+  save();
+  updateResultPanel();
+  updateStatusBar();
+  renderLeaderboard();
+  showToast('Results cleared. Betting reopened.');
+}
+
+function removePlayer(key){
+  if(!confirm('Remove player "'+DB[key].name+'"? This cannot be undone.'))return;
+  delete DB[key];
+  save();
+  renderAdminUsers();
+  renderLeaderboard();
+  showToast('Player removed.');
+}
+
+function removeAllPlayers(){
+  if(!confirm('Remove ALL players? This cannot be undone.'))return;
+  DB={};
+  save();
+  renderAdminUsers();
+  renderLeaderboard();
+  showToast('All players removed.');
+}
+
 function setRaceStatus(s){
   raceStatus=s;updateStatusBar();save();
-  if(s==='results'){document.getElementById('resultSection').style.display='block';populateResultDropdowns();}
-  else document.getElementById('resultSection').style.display='none';
   showToast('Status: '+s);
 }
 
@@ -641,7 +767,7 @@ function addHorse(){
   if(horses.find(function(h){return h.num===num;})){showToast('Horse #'+num+' already exists');return;}
   horses.push({num:num,name:name,jockey:jockey,odds:odds||'5-1',color:color,lastRace:lastRace});
   horses.sort(function(a,b){return a.num-b.num;});
-  save();renderAdminHorses();renderHorses();
+  save();renderAdminHorses();renderHorses();populateResultDropdowns();
   document.getElementById('ah-num').value='';document.getElementById('ah-name').value='';
   document.getElementById('ah-jockey').value='';document.getElementById('ah-odds').value='';
   document.getElementById('ah-color').value='';document.getElementById('ah-last').value='';
@@ -651,7 +777,7 @@ function addHorse(){
 function removeHorse(num){
   if(!confirm('Remove horse #'+num+'?'))return;
   horses=horses.filter(function(h){return h.num!==num;});
-  save();renderAdminHorses();renderHorses();
+  save();renderAdminHorses();renderHorses();populateResultDropdowns();
 }
 
 function renderAdminHorses(){
@@ -670,8 +796,11 @@ function renderAdminHorses(){
 }
 
 function populateResultDropdowns(){
-  var opts='<option value="">Select...</option>'+horses.map(function(h){return '<option value="'+h.num+'">'+h.name+'</option>';}).join('');
-  ['res-1st','res-2nd','res-3rd'].forEach(function(id){document.getElementById(id).innerHTML=opts;});
+  var opts='<option value="">Select...</option>'+horses.map(function(h){return '<option value="'+h.num+'">#'+h.num+' '+h.name+'</option>';}).join('');
+  ['res-1st','res-2nd','res-3rd'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.innerHTML=opts;
+  });
 }
 
 function processResults(){
@@ -680,6 +809,7 @@ function processResults(){
   var p3=parseInt(document.getElementById('res-3rd').value);
   if(!p1||!p2||!p3){showToast('Please select all 3 positions');return;}
   if(new Set([p1,p2,p3]).size<3){showToast('Each position must be a different horse');return;}
+  if(!confirm('Post these results and pay out all bets? This will update everyone\'s balance.'))return;
   raceResults=[p1,p2,p3];raceStatus='results';save();
   Object.values(DB).forEach(function(user){
     user.bets.forEach(function(bet){
@@ -696,7 +826,8 @@ function processResults(){
     });
   });
   save();updateHeader();updateStatusBar();renderLeaderboard();
-  showToast('Results processed & payouts complete! 🏁');
+  updateResultPanel();
+  showToast('🏁 Results posted & all bets paid out!');
 }
 
 function renderAdminUsers(){
@@ -704,20 +835,26 @@ function renderAdminUsers(){
   var pc=document.getElementById('playerCount');
   var users=Object.values(DB);
   if(pc)pc.textContent=users.length;
-  if(!users.length){el.innerHTML='<div style="color:var(--muted);font-size:0.8rem">No players yet</div>';return;}
-  el.innerHTML=users.map(function(u){
+  if(!users.length){el.innerHTML='<div style="color:var(--muted);font-size:0.8rem;padding:8px">No players yet</div>';return;}
+  el.innerHTML=users.sort(function(a,b){return b.balance-a.balance;}).map(function(u){
+    var key=u.name.toLowerCase().replace(/\s+/g,'_');
     return '<div class="card2" style="display:flex;justify-content:space-between;align-items:center">'+
       '<div><div style="font-family:\'Playfair Display\',serif">'+u.name+'</div>'+
       '<div style="font-size:0.75rem;color:var(--muted)">'+u.bets.length+' bet(s) · PIN: '+u.pin+'</div></div>'+
-      '<div style="font-family:Oswald,sans-serif;color:var(--gold-light)">$'+u.balance.toLocaleString()+'</div></div>';
+      '<div style="display:flex;align-items:center;gap:8px">'+
+      '<div style="font-family:Oswald,sans-serif;color:var(--gold-light)">$'+u.balance.toLocaleString()+'</div>'+
+      '<button class="btn-danger" style="padding:4px 8px;font-size:0.65rem" onclick="removePlayer(\''+key+'\')">✕</button>'+
+      '</div></div>';
   }).join('');
 }
 
 function resetAll(){
   localStorage.removeItem('ccc_db');
-  DB={};horses=[];raceStatus='open';raceResults=null;currentUser=null;
+  DB={};horses=DEFAULT_HORSES;raceStatus='open';raceResults=null;currentUser=null;
+  save();
   document.getElementById('appScreen').style.display='none';
   document.getElementById('loginScreen').style.display='block';
+  lockAdmin();
   showToast('All data reset!');
 }
 
@@ -728,33 +865,35 @@ function showToast(msg){
 }
 
 var DEFAULT_HORSES=[
-  {num:1,name:'Renegade',jockey:'I. Ortiz Jr.',trainer:'T. Pletcher',odds:'4-1',sire:'Into Mischief',color:'Blue & Gold',lastRace:'Won Arkansas Derby G1'},
-  {num:2,name:'Commandment',jockey:'F. Prat',trainer:'B. Cox',odds:'7-1',sire:'Into Mischief',color:'Red & White',lastRace:'Won Florida Derby G1'},
-  {num:3,name:'Further Ado',jockey:'I. Ortiz Jr.',trainer:'B. Cox',odds:'8-1',sire:'Gun Runner',color:'Green & Gold',lastRace:'Won Blue Grass G1 by 11L'},
-  {num:4,name:'The Puma',jockey:'J. Castellano',trainer:'G. Delgado',odds:'12-1',sire:'Essential Quality',color:'Purple & Silver',lastRace:'2nd Florida Derby G1'},
-  {num:5,name:'So Happy',jockey:'M. Smith',trainer:'M. Glatt',odds:'15-1',sire:'Runhappy',color:'Yellow & Black',lastRace:'Won Santa Anita Derby G1'},
-  {num:6,name:'Silent Tactic',jockey:'C. Torres',trainer:'M. Casse',odds:'18-1',sire:'Tacitus',color:'Navy & Orange',lastRace:'2nd Arkansas Derby G1'},
-  {num:7,name:'Paladin',jockey:'T. Gaffalione',trainer:'C. Brown',odds:'20-1',sire:'Gun Runner',color:'Maroon & White',lastRace:'Won Risen Star G2'},
-  {num:8,name:'Chief Wallabee',jockey:'J. Alvarado',trainer:'W. Mott',odds:'13-1',sire:'Constitution',color:'Teal & Gold',lastRace:'3rd Florida Derby G1'},
-  {num:9,name:'Nearly',jockey:'J. Velazquez',trainer:'T. Pletcher',odds:'20-1',sire:'Not This Time',color:'Pink & White',lastRace:'4th Florida Derby G1'},
-  {num:10,name:'Potente',jockey:'J. Hernandez',trainer:'B. Baffert',odds:'25-1',sire:'Into Mischief',color:'White & Blue',lastRace:'2nd Santa Anita Derby G1'},
-  {num:11,name:'Class President',jockey:'J. Velazquez',trainer:'T. Pletcher',odds:'30-1',sire:'Uncle Mo',color:'Crimson & Gold',lastRace:'Won Rebel Stakes G2'},
-  {num:12,name:'Pavlovian',jockey:'E. Maldonado',trainer:'D. O\'Neill',odds:'30-1',sire:'Pavel',color:'Green & White',lastRace:'2nd Louisiana Derby G2'},
-  {num:13,name:'Intrepido',jockey:'H. Berrios',trainer:'J. Mullins',odds:'40-1',sire:'Maximus Mischief',color:'Orange & Black',lastRace:'4th Santa Anita Derby G1'},
-  {num:14,name:'Fulleffort',jockey:'I. Ortiz Jr.',trainer:'B. Cox',odds:'23-1',sire:'Liam\'s Map',color:'Gold & Brown',lastRace:'Won Jeff Ruby Steaks G3'},
-  {num:15,name:'Emerging Market',jockey:'F. Prat',trainer:'C. Brown',odds:'15-1',sire:'Candy Ride',color:'Silver & Blue',lastRace:'Won Louisiana Derby G2'},
-  {num:16,name:'Golden Tempo',jockey:'J. Ortiz',trainer:'C. DeVaux',odds:'30-1',sire:'Curlin',color:'Gold & Black',lastRace:'3rd Louisiana Derby G2'},
-  {num:17,name:'Robusta',jockey:'E. Jaramillo',trainer:'D. O\'Neill',odds:'50-1',sire:'Accelerate',color:'Brown & Tan',lastRace:'7th Santa Anita Derby G1'},
-  {num:18,name:'Chip Honcho',jockey:'L. Saez',trainer:'S. Asmussen',odds:'40-1',sire:'Connect',color:'Red & Grey',lastRace:'5th Louisiana Derby G2'},
-  {num:19,name:'Litmus Test',jockey:'F. Arrieta',trainer:'B. Baffert',odds:'35-1',sire:'Nyquist',color:'White & Red',lastRace:'7th Arkansas Derby G1'},
-  {num:20,name:'Brant',jockey:'F. Geroux',trainer:'B. Baffert',odds:'50-1',sire:'Gun Runner',color:'Blue & White',lastRace:'5th San Felipe G2'},
+  {num:1,name:'Renegade',jockey:'I. Ortiz Jr.',trainer:'T. Pletcher',odds:'5-1',color:'Red',lastRace:'Arkansas Derby G1'},
+  {num:2,name:'Albus',jockey:'M. Franco',trainer:'R. Mott',odds:'51-1',color:'White',lastRace:'Advance KY Derby'},
+  {num:3,name:'Intrepido',jockey:'H. Berrios',trainer:'J. Mullins',odds:'59-1',color:'Blue',lastRace:'Advance KY Derby'},
+  {num:4,name:'Litmus Test',jockey:'M. Garcia',trainer:'B. Baffert',odds:'37-1',color:'Yellow',lastRace:'Advance KY Derby'},
+  {num:5,name:'Right To Party',jockey:'C. Elliott',trainer:'K. McPeek',odds:'29-1',color:'Green',lastRace:'Advance KY Derby'},
+  {num:6,name:'Commandment',jockey:'L. Saez',trainer:'B. Cox',odds:'7-1',color:'Black',lastRace:'Florida Derby G1'},
+  {num:7,name:'Danon Bourbon',jockey:'A. Nishimura',trainer:'M. Ikezoe',odds:'14-1',color:'Orange',lastRace:'Advance KY Derby'},
+  {num:8,name:'So Happy',jockey:'M. Smith',trainer:'M. Glatt',odds:'6-1',color:'Pink',lastRace:'Santa Anita Derby G1'},
+  {num:9,name:'The Puma',jockey:'J. Castellano',trainer:'G. Delgado',odds:'7-1',color:'Purple',lastRace:'Florida Derby G1'},
+  {num:10,name:'Wonder Dean',jockey:'R. Sakai',trainer:'D. Takayanagi',odds:'20-1',color:'Teal',lastRace:'Advance KY Derby'},
+  {num:11,name:'Incredibolt',jockey:'J. Torres',trainer:'R. Mott',odds:'37-1',color:'Olive',lastRace:'Advance KY Derby'},
+  {num:12,name:'Chief Wallabee',jockey:'J. Alvarado',trainer:'W. Mott',odds:'12-1',color:'Navy',lastRace:'Florida Derby G1'},
+  {num:14,name:'Potente',jockey:'J. Hernandez',trainer:'B. Baffert',odds:'26-1',color:'Maroon',lastRace:'Santa Anita Derby G1'},
+  {num:15,name:'Emerging Market',jockey:'F. Prat',trainer:'C. Brown',odds:'12-1',color:'Silver',lastRace:'Louisiana Derby G2'},
+  {num:16,name:'Pavlovian',jockey:'E. Maldonado',trainer:'D. O\'Neill',odds:'49-1',color:'Lime',lastRace:'Louisiana Derby G2'},
+  {num:17,name:'Six Speed',jockey:'B. Hernandez Jr.',trainer:'B. Seemar',odds:'45-1',color:'Indigo',lastRace:'Advance KY Derby'},
+  {num:18,name:'Further Ado',jockey:'J. Velazquez',trainer:'B. Cox',odds:'7-1',color:'Gold',lastRace:'Blue Grass G1'},
+  {num:19,name:'Golden Tempo',jockey:'J. Ortiz',trainer:'C. Devaux',odds:'45-1',color:'Copper',lastRace:'Louisiana Derby G2'},
+  {num:20,name:'Fulleffort',jockey:'T. Gaffalione',trainer:'B. Cox',odds:'19-1',color:'Crimson',lastRace:'Jeff Ruby Steaks G3'},
+  {num:21,name:'Great White',jockey:'A. Achard',trainer:'J. Ennis',odds:'41-1',color:'White & Blue',lastRace:'Advance KY Derby'},
+  {num:22,name:'Ocelli',jockey:'J. Ramos',trainer:'D. Beckman',odds:'50-1',color:'Purple & Gold',lastRace:'Advance KY Derby'},
+  {num:23,name:'Robusta',jockey:'E. Jaramillo',trainer:'D. O\'Neill',odds:'50-1',color:'Brown',lastRace:'Santa Anita Derby G1'},
+  {num:24,name:'Corona De Oro',jockey:'B. Hernandez Jr.',trainer:'D. Stewart',odds:'50-1',color:'Gold & Black',lastRace:'Advance KY Derby'},
 ];
 
 load();
-if(!horses.length){
-  horses=DEFAULT_HORSES;
-  save();
-}
+// Always sync horses from the official lineup (overrides any stale cached horses)
+horses=DEFAULT_HORSES;
+save();
 drawWheel(0);
 </script>
 </body>
