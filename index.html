@@ -111,7 +111,7 @@ body::before{content:'';position:fixed;inset:0;background:rgba(5,15,5,0.78);z-in
 #toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a3a1a;border:1px solid var(--gold);color:var(--cream);padding:10px 22px;border-radius:30px;font-family:'Oswald',sans-serif;font-size:0.8rem;letter-spacing:1px;z-index:999;transition:transform 0.3s,opacity 0.3s;opacity:0;pointer-events:none;white-space:nowrap}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
 .modal{background:var(--card);border:2px solid var(--gold);border-radius:16px;padding:24px;max-width:360px;width:100%;text-align:center}
 .modal-title{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--gold-light);margin-bottom:12px}
 .modal-prize{font-family:'Oswald',sans-serif;font-size:2.5rem;color:var(--gold);margin:16px 0;font-weight:700}
@@ -460,17 +460,27 @@ function startListeners(){
   _usersListener=setInterval(function(){
     fbGet('/users',function(data){
       if(!data)return;
-      // Preserve current user's local state so in-flight bet saves aren't wiped
-      var localUser = currentUser && DB[currentUser] ? DB[currentUser] : null;
+      // Preserve current user's local state to avoid clobbering in-flight saves
+      var localUser=currentUser&&DB[currentUser]?DB[currentUser]:null;
       DB=data;
-      if(currentUser && localUser && !DB[currentUser]){
-        DB[currentUser]=localUser;
-      }
+      if(currentUser&&localUser&&!DB[currentUser])DB[currentUser]=localUser;
       updateHeader();
       renderLeaderboard();
       if(adminUnlocked)renderAdminUsers();
     });
   },5000);
+}
+
+// ── Fetch all users and merge, preserving current user's local state ──
+function refreshAllUsers(cb){
+  fbGet('/users',function(data){
+    if(data){
+      var localUser=currentUser&&DB[currentUser]?DB[currentUser]:null;
+      DB=data;
+      if(currentUser&&localUser&&!DB[currentUser])DB[currentUser]=localUser;
+    }
+    if(cb)cb();
+  });
 }
 
 // ── Initial load from Firebase ──
@@ -482,18 +492,6 @@ function load(cb){
       DB=data.users||{};
       raceStatus=(data.game&&data.game.raceStatus)||'open';
       raceResults=(data.game&&data.game.raceResults)||null;
-    }
-    if(cb)cb();
-  });
-}
-
-// ── Fetch all users and merge into DB, preserving current user's local state ──
-function refreshAllUsers(cb){
-  fbGet('/users',function(data){
-    if(data){
-      var localUser = currentUser && DB[currentUser] ? DB[currentUser] : null;
-      DB=data;
-      if(currentUser && localUser && !DB[currentUser]) DB[currentUser]=localUser;
     }
     if(cb)cb();
   });
@@ -534,9 +532,7 @@ function enterApp(key,isNew){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
   updateHeader();renderBetPage();
-  refreshAllUsers(function(){
-    renderLeaderboard();
-  });
+  refreshAllUsers(function(){renderLeaderboard();});
   startListeners();
   if(isNew&&!DB[key].wheelSpun){setTimeout(function(){showWheelModal();},600);}
 }
@@ -728,7 +724,6 @@ function confirmBet(){
   u.balance-=pendingBet.amount;
   var bet=Object.assign({},pendingBet,{id:Date.now(),status:'pending',time:Date.now()});
   u.bets.push(bet);
-  var captured=pendingBet;
   pendingBet=null;
   showLoadingOverlay(true,'PLACING BET...');
   fbSet('/users/'+currentUser, DB[currentUser], function(){
