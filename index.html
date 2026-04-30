@@ -377,6 +377,12 @@ body::before{content:'';position:fixed;inset:0;background:rgba(5,15,5,0.78);z-in
   </div>
 </div>
 
+<div id="loadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <div style="width:48px;height:48px;border:4px solid rgba(201,168,76,0.3);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite"></div>
+  <div style="font-family:'Oswald',sans-serif;color:var(--gold-light);letter-spacing:2px;font-size:0.8rem" id="loadingMsg">LOADING...</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
 <div id="toast"></div>
 
 <script>
@@ -403,12 +409,83 @@ var WHEEL_PRIZES=[
 ];
 var WHEEL_COLORS=['#1a4a1a','#2d6e2d','#C9A84C','#8B6914','#1a3a0a','#3d8b3d','#c9a84c','#1a4a1a','#2d6e2d','#8B6914'];
 
-function save(){try{localStorage.setItem('ccc_db',JSON.stringify({DB:DB,horses:horses,raceStatus:raceStatus,raceResults:raceResults}))}catch(e){}}
-function load(){
-  try{
-    var d=localStorage.getItem('ccc_db');
-    if(d){var p=JSON.parse(d);DB=p.DB||{};horses=p.horses||[];raceStatus=p.raceStatus||'open';raceResults=p.raceResults||null;}
-  }catch(e){}
+// ═══════════════════════════════════════════
+// FIREBASE CONFIG — paste your DB URL below
+// ═══════════════════════════════════════════
+var FIREBASE_URL='https://chairman-s-casino-default-rtdb.firebaseio.com';
+
+// ── Firebase REST helpers ──
+function fbGet(path,cb){
+  fetch(FIREBASE_URL+path+'.json').then(function(r){return r.json();}).then(cb).catch(function(e){console.error('fbGet',e);cb(null);});
+}
+function fbSet(path,data,cb){
+  fetch(FIREBASE_URL+path+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(function(r){return r.json();}).then(function(){if(cb)cb();}).catch(function(e){console.error('fbSet',e);});
+}
+function fbPatch(path,data,cb){
+  fetch(FIREBASE_URL+path+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+    .then(function(r){return r.json();}).then(function(){if(cb)cb();}).catch(function(e){console.error('fbPatch',e);});
+}
+
+// ── Save helpers ──
+function saveUser(key){
+  fbSet('/users/'+key, DB[key]);
+}
+function saveGame(){
+  fbSet('/game', {raceStatus:raceStatus, raceResults:raceResults});
+}
+function saveAll(){
+  var payload={game:{raceStatus:raceStatus,raceResults:raceResults},users:DB};
+  fbSet('/',payload);
+}
+
+// ── Real-time listeners using SSE long-poll ──
+var _gameListener=null, _usersListener=null;
+
+function startListeners(){
+  // Poll every 5 seconds for game state and users
+  if(_gameListener)clearInterval(_gameListener);
+  if(_usersListener)clearInterval(_usersListener);
+
+  _gameListener=setInterval(function(){
+    fbGet('/game',function(data){
+      if(!data)return;
+      var changed=false;
+      if(data.raceStatus && data.raceStatus!==raceStatus){raceStatus=data.raceStatus;changed=true;}
+      if(JSON.stringify(data.raceResults)!==JSON.stringify(raceResults)){raceResults=data.raceResults||null;changed=true;}
+      if(changed){updateStatusBar();renderLeaderboard();}
+    });
+  },5000);
+
+  _usersListener=setInterval(function(){
+    fbGet('/users',function(data){
+      if(!data)return;
+      DB=data;
+      updateHeader();
+      renderLeaderboard();
+      if(adminUnlocked)renderAdminUsers();
+    });
+  },5000);
+}
+
+// ── Initial load from Firebase ──
+function load(cb){
+  showLoadingOverlay(true);
+  fbGet('/',function(data){
+    showLoadingOverlay(false);
+    if(data){
+      DB=data.users||{};
+      raceStatus=(data.game&&data.game.raceStatus)||'open';
+      raceResults=(data.game&&data.game.raceResults)||null;
+    }
+    if(cb)cb();
+  });
+}
+
+function showLoadingOverlay(show,msg){
+  var el=document.getElementById('loadingOverlay');
+  el.style.display=show?'flex':'none';
+  if(msg)document.getElementById('loadingMsg').textContent=msg;
 }
 
 function handleLogin(){
@@ -417,15 +494,30 @@ function handleLogin(){
   if(!name||pin.length<4){showToast('Please enter your name and a 4-digit PIN');return;}
   var key=name.toLowerCase().replace(/\s+/g,'_');
   var isNew=false;
-  if(!DB[key]){
-    DB[key]={name:name,pin:pin,balance:1000,bets:[],wheelSpun:false,joinTime:Date.now()};
-    isNew=true;
-  }else if(DB[key].pin!==pin){showToast('Wrong PIN – try again!');return;}
+  showLoadingOverlay(true,'CHECKING IN...');
+  fbGet('/users/'+key,function(existing){
+    showLoadingOverlay(false);
+    if(!existing){
+      // New user
+      DB[key]={name:name,pin:pin,balance:1000,bets:[],wheelSpun:false,joinTime:Date.now()};
+      isNew=true;
+      fbSet('/users/'+key,DB[key],function(){
+        enterApp(key,isNew);
+      });
+    }else{
+      if(existing.pin!==pin){showToast('Wrong PIN – try again!');return;}
+      DB[key]=existing;
+      enterApp(key,false);
+    }
+  });
+}
+
+function enterApp(key,isNew){
   currentUser=key;
-  save();
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
   updateHeader();renderBetPage();renderLeaderboard();
+  startListeners();
   if(isNew&&!DB[key].wheelSpun){setTimeout(function(){showWheelModal();},600);}
 }
 
@@ -507,7 +599,8 @@ function spinWheel(){
       var prize=WHEEL_PRIZES[idx];
       DB[currentUser].balance+=prize.value;
       DB[currentUser].wheelSpun=true;
-      save();updateHeader();
+      saveUser(currentUser);
+      updateHeader();
       document.getElementById('prizeDisplay').textContent='+'+prize.label;
       document.getElementById('wheelResult').style.display='block';
       document.getElementById('spinBtn').style.display='none';
@@ -615,9 +708,16 @@ function confirmBet(){
   var u=DB[currentUser];
   u.balance-=pendingBet.amount;
   var bet=Object.assign({},pendingBet,{id:Date.now(),status:'pending',time:Date.now()});
-  u.bets.push(bet);save();updateHeader();
-  document.getElementById('confirmModal').style.display='none';
-  showToast('Bet placed! Good luck! 🍀');pendingBet=null;
+  u.bets.push(bet);
+  showLoadingOverlay(true,'PLACING BET...');
+  saveUser(currentUser);
+  setTimeout(function(){
+    showLoadingOverlay(false);
+    updateHeader();
+    document.getElementById('confirmModal').style.display='none';
+    showToast('Bet placed! Good luck! 🍀');
+    pendingBet=null;
+  },600);
 }
 
 function renderMyBets(){
@@ -717,42 +817,44 @@ function updateResultPanel(){
 }
 
 function clearResults(){
-  raceResults=null;
-  raceStatus='open';
-  // Revert all resolved bets back to pending and reverse payouts
+  raceResults=null;raceStatus='open';
   Object.values(DB).forEach(function(user){
     user.bets.forEach(function(bet){
       if(bet.status==='won'){user.balance-=bet.payout;}
       if(bet.status!=='pending'){bet.status='pending';}
     });
   });
-  save();
-  updateResultPanel();
-  updateStatusBar();
-  renderLeaderboard();
-  showToast('Results cleared. Betting reopened.');
+  showLoadingOverlay(true,'CLEARING...');
+  fbSet('/',{game:{raceStatus:'open',raceResults:null},users:DB},function(){
+    showLoadingOverlay(false);
+    updateResultPanel();updateStatusBar();renderLeaderboard();
+    showToast('Results cleared. Betting reopened.');
+  });
 }
 
 function removePlayer(key){
   if(!confirm('Remove player "'+DB[key].name+'"? This cannot be undone.'))return;
   delete DB[key];
-  save();
-  renderAdminUsers();
-  renderLeaderboard();
-  showToast('Player removed.');
+  fetch(FIREBASE_URL+'/users/'+key+'.json',{method:'DELETE'}).then(function(){
+    renderAdminUsers();renderLeaderboard();
+    showToast('Player removed.');
+  });
 }
 
 function removeAllPlayers(){
   if(!confirm('Remove ALL players? This cannot be undone.'))return;
   DB={};
-  save();
-  renderAdminUsers();
-  renderLeaderboard();
-  showToast('All players removed.');
+  showLoadingOverlay(true,'REMOVING...');
+  fbSet('/users',{},function(){
+    showLoadingOverlay(false);
+    renderAdminUsers();renderLeaderboard();
+    showToast('All players removed.');
+  });
 }
 
 function setRaceStatus(s){
-  raceStatus=s;updateStatusBar();save();
+  raceStatus=s;updateStatusBar();
+  saveGame();
   showToast('Status: '+s);
 }
 
@@ -767,7 +869,7 @@ function addHorse(){
   if(horses.find(function(h){return h.num===num;})){showToast('Horse #'+num+' already exists');return;}
   horses.push({num:num,name:name,jockey:jockey,odds:odds||'5-1',color:color,lastRace:lastRace});
   horses.sort(function(a,b){return a.num-b.num;});
-  save();renderAdminHorses();renderHorses();populateResultDropdowns();
+  renderAdminHorses();renderHorses();populateResultDropdowns();
   document.getElementById('ah-num').value='';document.getElementById('ah-name').value='';
   document.getElementById('ah-jockey').value='';document.getElementById('ah-odds').value='';
   document.getElementById('ah-color').value='';document.getElementById('ah-last').value='';
@@ -777,7 +879,7 @@ function addHorse(){
 function removeHorse(num){
   if(!confirm('Remove horse #'+num+'?'))return;
   horses=horses.filter(function(h){return h.num!==num;});
-  save();renderAdminHorses();renderHorses();populateResultDropdowns();
+  renderAdminHorses();renderHorses();populateResultDropdowns();
 }
 
 function renderAdminHorses(){
@@ -810,7 +912,7 @@ function processResults(){
   if(!p1||!p2||!p3){showToast('Please select all 3 positions');return;}
   if(new Set([p1,p2,p3]).size<3){showToast('Each position must be a different horse');return;}
   if(!confirm('Post these results and pay out all bets? This will update everyone\'s balance.'))return;
-  raceResults=[p1,p2,p3];raceStatus='results';save();
+  raceResults=[p1,p2,p3];raceStatus='results';
   Object.values(DB).forEach(function(user){
     user.bets.forEach(function(bet){
       if(bet.status!=='pending')return;
@@ -825,9 +927,14 @@ function processResults(){
       if(won)user.balance+=bet.payout;
     });
   });
-  save();updateHeader();updateStatusBar();renderLeaderboard();
-  updateResultPanel();
-  showToast('🏁 Results posted & all bets paid out!');
+  showLoadingOverlay(true,'PROCESSING PAYOUTS...');
+  var payload={game:{raceStatus:raceStatus,raceResults:raceResults},users:DB};
+  fbSet('/',payload,function(){
+    showLoadingOverlay(false);
+    updateHeader();updateStatusBar();renderLeaderboard();
+    updateResultPanel();renderAdminUsers();
+    showToast('🏁 Results posted & all bets paid out!');
+  });
 }
 
 function renderAdminUsers(){
@@ -849,13 +956,18 @@ function renderAdminUsers(){
 }
 
 function resetAll(){
-  localStorage.removeItem('ccc_db');
-  DB={};horses=DEFAULT_HORSES;raceStatus='open';raceResults=null;currentUser=null;
-  save();
-  document.getElementById('appScreen').style.display='none';
-  document.getElementById('loginScreen').style.display='block';
-  lockAdmin();
-  showToast('All data reset!');
+  if(!confirm('Reset EVERYTHING including all players, bets and results?'))return;
+  DB={};raceStatus='open';raceResults=null;currentUser=null;
+  showLoadingOverlay(true,'RESETTING...');
+  fbSet('/',{game:{raceStatus:'open',raceResults:null},users:{}},function(){
+    showLoadingOverlay(false);
+    if(_gameListener)clearInterval(_gameListener);
+    if(_usersListener)clearInterval(_usersListener);
+    document.getElementById('appScreen').style.display='none';
+    document.getElementById('loginScreen').style.display='block';
+    lockAdmin();
+    showToast('All data reset!');
+  });
 }
 
 function showToast(msg){
@@ -890,11 +1002,15 @@ var DEFAULT_HORSES=[
   {num:24,name:'Corona De Oro',jockey:'B. Hernandez Jr.',trainer:'D. Stewart',odds:'50-1',color:'Gold & Black',lastRace:'Advance KY Derby'},
 ];
 
-load();
-// Always sync horses from the official lineup (overrides any stale cached horses)
+// Horses are always the official lineup
 horses=DEFAULT_HORSES;
-save();
 drawWheel(0);
+
+// Boot: load from Firebase then show login
+load(function(){
+  // game state loaded from Firebase, ready
+});
+
 </script>
 </body>
 </html>
