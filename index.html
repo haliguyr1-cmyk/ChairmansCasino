@@ -171,9 +171,15 @@ body::before{content:'';position:fixed;inset:0;background:rgba(5,15,5,0.78);z-in
       <div class="header-title">The Chairman's Casino</div>
       <div class="header-sub" id="headerUser">Kentucky Derby 2026</div>
     </div>
-    <div class="balance-chip">
-      <div class="balance-label">Balance</div>
-      <div class="balance-amt" id="balanceDisplay">$1,000</div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span id="fbDot" style="width:8px;height:8px;border-radius:50%;background:#888;display:inline-block;transition:background 0.3s"></span>
+        <span id="fbLabel" style="font-family:Oswald,sans-serif;font-size:0.58rem;color:#888;letter-spacing:1px;text-transform:uppercase">connecting</span>
+      </div>
+      <div class="balance-chip">
+        <div class="balance-label">Balance</div>
+        <div class="balance-amt" id="balanceDisplay">$1,000</div>
+      </div>
     </div>
   </div>
   <div class="nav">
@@ -336,6 +342,20 @@ body::before{content:'';position:fixed;inset:0;background:rgba(5,15,5,0.78);z-in
         <div id="adminUsers"></div>
       </div>
 
+      <!-- Debug Panel -->
+      <div class="admin-section" style="border-color:#3a3a1a">
+        <div class="admin-title" style="color:#ffdd88">Debug Console</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="btn-outline btn-sm" onclick="debugTestFB()">Test Firebase</button>
+          <button class="btn-outline btn-sm" onclick="refreshAllUsers(function(){renderAdminUsers();renderLeaderboard();dbg('Force refresh done');})">Force Reload Users</button>
+          <button class="btn-outline btn-sm" onclick="dbg('Local DB has '+Object.keys(DB).length+' users: '+Object.keys(DB).join(', '))">Show Local DB</button>
+          <button class="btn-outline btn-sm" onclick="document.getElementById('debugLog').innerHTML=''">Clear Log</button>
+        </div>
+        <div id="debugLog" style="background:#0a0a0a;border:1px solid #333;border-radius:6px;padding:8px;font-family:monospace;font-size:0.68rem;color:#aaa;max-height:200px;overflow-y:auto;min-height:40px">
+          <div style="color:#555">Debug output will appear here...</div>
+        </div>
+      </div>
+
       <!-- Danger Zone -->
       <div class="admin-section" style="border-color:#5c1010">
         <div class="admin-title" style="color:#ff9999">⚠️ Danger Zone</div>
@@ -414,13 +434,52 @@ var WHEEL_COLORS=['#1a4a1a','#2d6e2d','#C9A84C','#8B6914','#1a3a0a','#3d8b3d','#
 // ═══════════════════════════════════════════
 var FIREBASE_URL='https://chairman-s-casino-default-rtdb.firebaseio.com';
 
-// ── Firebase REST helpers ──
+// Debug log
+function dbg(msg){
+  var el=document.getElementById('debugLog');
+  if(!el)return;
+  var t=new Date().toLocaleTimeString();
+  el.innerHTML='<div style="padding:2px 0;border-bottom:1px solid #222">['+t+'] '+msg+'</div>'+el.innerHTML;
+}
+function setFbStatus(state,msg){
+  var dot=document.getElementById('fbDot');
+  var lbl=document.getElementById('fbLabel');
+  if(!dot||!lbl)return;
+  var c={ok:'#4caf50',err:'#f44336',busy:'#ffaa00',off:'#888'};
+  dot.style.background=c[state]||c.off;
+  lbl.textContent=msg||state;
+}
+// Firebase converts arrays to objects on store - normalize back
+function normalizeUser(u){
+  if(!u)return u;
+  if(u.bets&&!Array.isArray(u.bets))u.bets=Object.values(u.bets);
+  if(!u.bets)u.bets=[];
+  return u;
+}
+function normalizeDB(obj){
+  if(!obj)return {};
+  Object.keys(obj).forEach(function(k){obj[k]=normalizeUser(obj[k]);});
+  return obj;
+}
+// Firebase REST helpers
 function fbGet(path,cb){
-  fetch(FIREBASE_URL+path+'.json').then(function(r){return r.json();}).then(cb).catch(function(e){console.error('fbGet',e);cb(null);});
+  setFbStatus('busy','syncing...');
+  fetch(FIREBASE_URL+path+'.json')
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(data){
+      setFbStatus('ok','connected');
+      var s=data===null?'null':typeof data==='object'?'object('+Object.keys(data||{}).length+'keys)':String(data);
+      dbg('GET '+path+' -> '+s);
+      cb(data);
+    })
+    .catch(function(e){setFbStatus('err','error');dbg('GET FAIL '+path+': '+e.message);cb(null);});
 }
 function fbSet(path,data,cb){
+  setFbStatus('busy','saving...');
   fetch(FIREBASE_URL+path+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
-    .then(function(r){return r.json();}).then(function(){if(cb)cb();}).catch(function(e){console.error('fbSet',e);});
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(){setFbStatus('ok','connected');dbg('SET '+path+' OK');if(cb)cb();})
+    .catch(function(e){setFbStatus('err','save failed');dbg('SET FAIL '+path+': '+e.message);showToast('Save failed - check connection');});
 }
 function fbPatch(path,data,cb){
   fetch(FIREBASE_URL+path+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
@@ -462,7 +521,7 @@ function startListeners(){
       if(!data)return;
       // Preserve current user's local state to avoid clobbering in-flight saves
       var localUser=currentUser&&DB[currentUser]?DB[currentUser]:null;
-      DB=data;
+      DB=normalizeDB(data);
       if(currentUser&&localUser&&!DB[currentUser])DB[currentUser]=localUser;
       updateHeader();
       renderLeaderboard();
@@ -476,9 +535,10 @@ function refreshAllUsers(cb){
   fbGet('/users',function(data){
     if(data){
       var localUser=currentUser&&DB[currentUser]?DB[currentUser]:null;
-      DB=data;
+      DB=normalizeDB(data);
       if(currentUser&&localUser&&!DB[currentUser])DB[currentUser]=localUser;
-    }
+      dbg("refreshAllUsers: "+Object.keys(DB).length+" users");
+    } else {dbg("refreshAllUsers: null from Firebase");}
     if(cb)cb();
   });
 }
@@ -489,7 +549,7 @@ function load(cb){
   fbGet('/',function(data){
     showLoadingOverlay(false);
     if(data){
-      DB=data.users||{};
+      DB=normalizeDB(data.users||{});dbg("load: "+Object.keys(DB).length+" users");
       raceStatus=(data.game&&data.game.raceStatus)||'open';
       raceResults=(data.game&&data.game.raceResults)||null;
     }
@@ -719,18 +779,21 @@ function placeBet(){
 }
 
 function confirmBet(){
-  if(!pendingBet)return;
+  if(!pendingBet){dbg('confirmBet: pendingBet null!');return;}
+  dbg('confirmBet: saving bet for '+currentUser);
   var u=DB[currentUser];
+  if(!u){dbg('ERROR: currentUser not in DB');showLoadingOverlay(false);return;}
   u.balance-=pendingBet.amount;
   var bet=Object.assign({},pendingBet,{id:Date.now(),status:'pending',time:Date.now()});
   u.bets.push(bet);
   pendingBet=null;
   showLoadingOverlay(true,'PLACING BET...');
-  fbSet('/users/'+currentUser, DB[currentUser], function(){
+  fbSet('/users/'+currentUser,DB[currentUser],function(){
     showLoadingOverlay(false);
     updateHeader();
     document.getElementById('confirmModal').style.display='none';
-    showToast('Bet placed! Good luck! 🍀');
+    showToast('Bet placed! Good luck!');
+    dbg('Bet saved to Firebase OK');
   });
 }
 
@@ -970,6 +1033,13 @@ function renderAdminUsers(){
   }).join('');
 }
 
+function debugTestFB(){
+  dbg('Testing Firebase connection to: '+FIREBASE_URL);
+  fetch(FIREBASE_URL+'/.json?shallow=true')
+    .then(function(r){dbg('HTTP status: '+r.status+' '+r.statusText);return r.json();})
+    .then(function(d){dbg('Root keys: '+JSON.stringify(Object.keys(d||{})));})
+    .catch(function(e){dbg('Connection FAILED: '+e.message);});
+}
 function resetAll(){
   if(!confirm('Reset EVERYTHING including all players, bets and results?'))return;
   DB={};raceStatus='open';raceResults=null;currentUser=null;
